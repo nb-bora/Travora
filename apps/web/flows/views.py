@@ -244,6 +244,7 @@ def _step_trip(
         form=form,
         draft=draft,
         manual=request.GET.get("saisie") == "manuelle",
+        **flow.step1_context(draft),
         **extra,
     )
     status = 422 if request.method == "POST" and form.errors else 200
@@ -517,7 +518,7 @@ def flow_pay(request: HttpRequest, case_id: UUID) -> HttpResponse:
             if recorded is not None:
                 return redirect(done_url)
     else:
-        form = FlowPaymentForm(initial={"amount_xaf": due or None})
+        form = FlowPaymentForm(initial={"amount_xaf": due or None, "method": flow.default_method})
     paid = summary.price_total_xaf - summary.balance_xaf
     context = _layout(
         flow,

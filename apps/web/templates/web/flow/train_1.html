@@ -1,0 +1,47 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block total_attrs %} data-terms="id_price"{% endblock %}
+{% block flow_body %}
+<section class="card" aria-labelledby="route-t">
+  <h2 id="route-t" class="card-title">Trajet</h2>
+  <div class="grid-4">
+    {% include "web/_field.html" with field=form.origin %}
+    {% include "web/_field.html" with field=form.destination %}
+    {% include "web/_field.html" with field=form.departure_date %}
+    {% include "web/_field.html" with field=form.train %}
+    {% include "web/_field.html" with field=form.departure_time %}
+    {% include "web/_field.html" with field=form.arrival_time %}
+    {% include "web/_field.html" with field=form.booking_reference hint="Si l'opérateur en donne une" %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="cl-t">
+  <h2 id="cl-t" class="card-title">Classe et prix</h2>
+  {% for error in form.service_class.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+  <fieldset class="methods">
+    <legend class="sr-only">Classe</legend>
+    {% for value, label, note in class_cards %}
+    <label class="method"><input type="radio" name="service_class" value="{{ value }}"{% if form.service_class.value == value %} checked{% endif %}><span><strong>{{ label }}</strong><small>{{ note }}</small></span></label>
+    {% endfor %}
+  </fieldset>
+  <div class="grid-3">{% include "web/_field.html" with field=form.price hint="Prix de vente d'un billet de cette classe" %}</div>
+</section>
+
+<section class="notice notice-warning" aria-labelledby="conf-t">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+  <div>
+    <strong id="conf-t">Place à confirmer avec l'opérateur</strong>
+    <p>Travora ne voit pas les places libres : confirmez-la auprès de l'opérateur ferroviaire avant de vendre.</p>
+    <label class="check-line"><input type="checkbox" name="{{ form.seat_confirmed.html_name }}" id="{{ form.seat_confirmed.id_for_label }}"{% if form.seat_confirmed.value %} checked{% endif %}> Place confirmée auprès de l'opérateur</label>
+    {% for error in form.seat_confirmed.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="client-t">
+  <h2 id="client-t" class="card-title">Client</h2>
+  <div class="grid-2">
+    {% include "web/_field.html" with field=form.customer_name %}
+    {% include "web/_field.html" with field=form.customer_phone hint="Retrouvé par son téléphone s'il existe déjà" %}
+  </div>
+</section>
+{% endblock %}

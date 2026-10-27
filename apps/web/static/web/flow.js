@@ -97,6 +97,28 @@
     paint();
   }
 
+  // Plan d'une voiture de train : la voiture et les places du premier voyageur s'allument.
+  var carMap = document.querySelector(".car-map");
+  if (carMap) {
+    var title = document.getElementById("car-title");
+    var paintCar = function () {
+      var cars = document.querySelectorAll("input[name$='-car']");
+      var seats = document.querySelectorAll("input[name$='-seat']");
+      var shown = cars.length ? cars[0].value.trim() : "";
+      if (title) title.textContent = shown || "?";
+      var chosen = {};
+      Array.prototype.forEach.call(cars, function (car, index) {
+        var seat = seats[index] ? seats[index].value.trim() : "";
+        if (seat && car.value.trim() === shown) chosen[String(parseInt(seat, 10))] = true;
+      });
+      Array.prototype.forEach.call(carMap.querySelectorAll(".seat"), function (cell) {
+        cell.classList.toggle("seat-chosen", chosen[cell.textContent.trim()] === true);
+      });
+    };
+    document.addEventListener("input", paintCar);
+    paintCar();
+  }
+
   // Copier le message de remise, imprimer.
   Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (button) {
     button.addEventListener("click", function () {

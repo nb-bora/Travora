@@ -1,0 +1,27 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block cta_action %}confirm{% endblock %}
+{% block default_action %}confirm{% endblock %}
+{% block total_attrs %} data-terms="{{ live_total }}"{% endblock %}
+{% block flow_body %}
+{% include "web/flow/_price_table.html" with live_total=live_total %}
+
+<section class="card" aria-labelledby="cost-t">
+  <h2 id="cost-t" class="card-title">Coût d'achat et frais</h2>
+  <p class="muted flush">Ce que l'agence paie à l'opérateur pour chaque billet. Saisissable par tous, lisible par le gérant seulement.</p>
+  <div class="grid-2 cost-row">
+    {% include "web/_field.html" with field=pricing_form.cost_xaf %}
+    {% include "web/_field.html" with field=pricing_form.agency_fee_xaf hint="Facultatif" %}
+  </div>
+  {% if is_manager %}
+  <div class="callout callout-row">
+    <div><span class="muted">Marge prévue (gérant)</span><strong data-terms="{{ seat_total }} + id_agency_fee_xaf - id_cost_xaf*{{ draft.travellers|length }}"></strong></div>
+  </div>
+  {% endif %}
+</section>
+
+{% include "web/flow/_checks.html" with title="Avant de confirmer la vente" %}
+{% if specs %}{% include "web/flow/_ledger.html" %}{% else %}
+<p class="field-hint">La vente est enregistrée au compte du client et ne se modifie plus. Une erreur se corrige par une annulation.</p>
+{% endif %}
+{% endblock %}

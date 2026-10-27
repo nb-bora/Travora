@@ -435,3 +435,126 @@ def test_an_agent_in_the_bus_flow_never_sees_margin_or_cost(agency_a: AgencyFixt
         case = CasesService.list_cases(agency_a.agent)[0]
     assert case.cost_total_xaf is None
     assert case.expected_margin_xaf is None
+
+
+def train_trip(**overrides: str) -> dict[str, str]:
+    day = (timezone.localdate() + timedelta(days=10)).isoformat()
+    return {
+        "action": "next",
+        "origin": "Douala",
+        "destination": "Yaoundé",
+        "departure_date": day,
+        "train": "Train 2",
+        "departure_time": "09:00",
+        "arrival_time": "13:20",
+        "service_class": "comfort",
+        "price": "8500",
+        "booking_reference": "cr7h2k",
+        "seat_confirmed": "on",
+        "customer_name": "Awa Mbarga",
+        "customer_phone": "+237 655 44 33 22",
+    } | overrides
+
+
+def train_traveller(**overrides: str) -> dict[str, str]:
+    return {
+        "action": "next",
+        "form-TOTAL_FORMS": "1",
+        "form-INITIAL_FORMS": "0",
+        "form-MIN_NUM_FORMS": "0",
+        "form-MAX_NUM_FORMS": "9",
+        "form-0-name": "Awa Mbarga",
+        "form-0-traveller_phone": "+237 655 44 33 22",
+        "form-0-doc_type": "cni",
+        "form-0-doc_number": "CNI 112 458 903",
+        "form-0-fare_type": "adult",
+        "form-0-car": "3",
+        "form-0-seat": "24",
+        "form-0-bags": "1",
+    } | overrides
+
+
+def run_train_flow(client: Client) -> str:
+    client.get(reverse("web:flow_start", kwargs={"mode": "train"}))
+    assert client.post(step("train", 1), train_trip()).status_code == 302
+    assert client.post(step("train", 2), train_traveller()).status_code == 302
+    response = client.post(
+        step("train", 3), {"action": "confirm", "cost_xaf": "8000", "agency_fee_xaf": "500"}
+    )
+    assert response.status_code == 302
+    return str(response["Location"])
+
+
+def test_a_complete_train_flow_with_cash_and_change(agency_a: AgencyFixture) -> None:
+    manager = login("alpha-manager")
+    pay_url = run_train_flow(manager)
+
+    with TenancyService.scope(agency_a.id):
+        case = CasesService.list_cases(agency_a.manager)[0]
+        detail = CasesService.get_case(agency_a.manager, case.id)
+    assert case.price_total_xaf == 9_000
+    assert case.recognized_margin_xaf == 1_000
+    ticket = detail.lines[0]
+    assert ticket.details["car"] == "3"
+    assert ticket.details["doc_number"] == "CNI 112 458 903"
+    assert ticket.details["booking_reference"] == "CR7H2K"
+
+    page = manager.get(pay_url).content.decode()
+    assert 'value="cash" checked' in page or "checked" in page.split('value="cash"')[1][:40]
+    assert 'id="change-due"' in page
+    paid = manager.post(
+        pay_url,
+        {
+            "action": "pay",
+            "method": "cash",
+            "amount_xaf": "9000",
+            "given_xaf": "10000",
+            "received_on": str(timezone.localdate()),
+            "reference": "",
+            "idempotency_key": "cash1",
+        },
+    )
+    assert paid.status_code == 302
+    done = manager.get(paid["Location"]).content.decode()
+    assert "Billet de train · Confort" in done
+    assert "CR7H2K" in done
+    assert "3 · 24" in done
+    assert "Changer ou annuler" in done
+    assert "Dossier soldé" in done
+
+
+def test_train_validation(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.get(reverse("web:flow_start", kwargs={"mode": "train"}))
+    no_seat = train_trip()
+    del no_seat["seat_confirmed"]
+    assert client.post(step("train", 1), no_seat).status_code == 422
+    client.post(step("train", 1), train_trip())
+    bad = client.post(
+        step("train", 2), train_traveller(**{"form-0-car": "x", "form-0-doc_number": ""})
+    )
+    body = bad.content.decode()
+    assert bad.status_code == 422
+    assert "Voiture : un numéro entre 1 et 99" in body
+    two = train_traveller(**{"form-TOTAL_FORMS": "2"})
+    two.update(
+        {
+            "form-1-name": "Autre Voyageur",
+            "form-1-doc_type": "passport",
+            "form-1-doc_number": "P 123",
+            "form-1-fare_type": "adult",
+            "form-1-car": "3",
+            "form-1-seat": "24",
+            "form-1-bags": "0",
+        }
+    )
+    assert "saisi deux fois" in client.post(step("train", 2), two).content.decode()
+
+
+def test_the_train_agent_view_hides_cost_and_margin(agency_a: AgencyFixture) -> None:
+    agent = login("alpha-agent")
+    pay_url = run_train_flow(agent)
+    assert "8 000" not in agent.get(pay_url).content.decode()
+    with TenancyService.scope(agency_a.id):
+        case = CasesService.list_cases(agency_a.agent)[0]
+    assert case.cost_total_xaf is None
