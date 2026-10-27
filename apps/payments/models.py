@@ -14,7 +14,13 @@ class Payment(TenantScopedModel):
     received_on = models.DateField()
     idempotency_key = models.CharField(max_length=64)
     recorded_by = models.UUIDField(null=True, blank=True)
-    ledger_transaction_id = models.UUIDField(null=True, blank=True)
+    ledger_transaction = models.ForeignKey(
+        "ledger.LedgerTransaction",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
     voided_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

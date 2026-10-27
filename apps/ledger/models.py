@@ -7,7 +7,7 @@ from apps.shared_kernel.append_only import AppendOnlyModel
 class LedgerTransaction(AppendOnlyModel):
     """Écriture comptable d'un dossier. Immuable : une erreur se corrige par contre-passation."""
 
-    case_id = models.UUIDField(db_index=True)
+    case = models.ForeignKey("cases.Case", on_delete=models.PROTECT, related_name="+")
     kind = models.CharField(max_length=16, choices=TransactionKind.choices)
     occurred_on = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)

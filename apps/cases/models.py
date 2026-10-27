@@ -44,7 +44,13 @@ class CaseLine(TenantScopedModel):
     cost_xaf = models.BigIntegerField(null=True, blank=True)
     raw_text = models.TextField(blank=True)
     issued_on = models.DateField(null=True, blank=True)
-    sale_transaction_id = models.UUIDField(null=True, blank=True)
+    sale_transaction = models.ForeignKey(
+        "ledger.LedgerTransaction",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
     voided_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
