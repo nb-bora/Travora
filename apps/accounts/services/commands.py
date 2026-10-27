@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from django.contrib.auth.password_validation import validate_password
+
 from apps.accounts.dto import MembershipInfo
 from apps.accounts.models import Membership, User
 from apps.audit.services.public import AuditService
@@ -8,6 +10,7 @@ from apps.shared_kernel.roles import Role
 
 
 def _create(*, username: str, password: str, role: Role, created_by: UUID | None) -> MembershipInfo:
+    validate_password(password)
     user = User.objects.create_user(username=username, password=password)
     membership = Membership.objects.create(user=user, role=role)
     AuditService.record(

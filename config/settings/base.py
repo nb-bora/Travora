@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.cases",
     "apps.payments",
     "apps.quotes",
+    "apps.concierge",
 ]
 
 MIDDLEWARE = [
