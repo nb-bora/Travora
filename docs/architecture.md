@@ -86,7 +86,8 @@ Deux rôles seulement : **gérant** et **agent**. Les vues renvoyées par les fa
 - Une ligne **émise ou annulée** ne se modifie plus.
 - Un **devis envoyé** est figé (prix, lignes, validité) ; une modification crée une nouvelle version. Un devis ne contient que les prix.
 - Un **paiement** hors espèces exige une référence, unique par agence ; un surpaiement est accepté comme crédit.
-- Un **numéro de billet** est unique parmi les lignes actives d'une agence. La reconnaissance depuis un texte collé n'est qu'une **proposition** à confirmer (13 chiffres selon des sources secondaires).
+- Une ligne est un **billet d'avion, de bus, de train ou de bateau**, ou une **prestation libre** (hôtel, visa, assurance…). Tout titre de transport porte une référence et un transporteur facultatif ; la prestation libre n'en porte pas. Aucun lien avec les systèmes des transporteurs : saisie manuelle.
+- Une **référence de billet** est unique parmi les lignes actives d'une agence, pour un même type de billet (chiffres seuls pour l'avion ; code alphanumérique en majuscules pour les autres). La reconnaissance depuis un texte collé n'est qu'une **proposition** à confirmer (13 chiffres selon des sources secondaires).
 - Un utilisateur appartient à **une seule agence** (MVP).
 
 ## 6. Pour ajouter une table du plan de données

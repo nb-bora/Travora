@@ -14,6 +14,7 @@ class CaseLineView:
     label: str
     passenger_name: str
     ticket_number: str
+    carrier: str
     price_xaf: int
     cost_xaf: int | None
     margin_xaf: int | None
