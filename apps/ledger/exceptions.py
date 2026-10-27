@@ -24,3 +24,15 @@ class CannotReverseReversal(LedgerError):
 
 class IdempotencyConflict(LedgerError):
     pass
+
+
+class DateOutOfRange(LedgerError):
+    pass
+
+
+class PeriodClosed(LedgerError):
+    pass
+
+
+class InvalidClosure(LedgerError):
+    pass

@@ -21,7 +21,7 @@ from apps.quotes.whatsapp import whatsapp_link
 from apps.tenancy.services.public import TenancyService
 from tests.conftest import AgencyFixture, runtime_role
 
-TODAY = date(2026, 10, 27)
+TODAY = timezone.localdate()
 LATER = date.today() + timedelta(days=15)
 SECRET_COST = 456_789
 

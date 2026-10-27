@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from uuid import UUID
 
 import pytest
+from django.utils import timezone
 
 from apps.cases.constants import LineKind
 from apps.cases.services.public import CasesService
@@ -15,7 +16,7 @@ from apps.quotes.services.public import QuotesService
 from apps.tenancy.services.public import TenancyService
 from tests.conftest import AgencyFixture, runtime_role
 
-TODAY = date(2026, 10, 27)
+TODAY = timezone.localdate()
 
 
 @pytest.fixture

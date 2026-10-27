@@ -98,6 +98,9 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = "fr"
 LANGUAGES = [("fr", "Français"), ("en", "English")]
 TIME_ZONE = "Africa/Douala"
+
+# Fenêtre de rétroactivité des écritures comptables (jours). Décision métier à confirmer.
+LEDGER_RETROACTIVITY_DAYS = 90
 USE_I18N = True
 USE_TZ = True
 

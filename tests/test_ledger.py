@@ -1,10 +1,12 @@
 import uuid
 from collections.abc import Iterator
-from datetime import date
+from datetime import date, timedelta
+from typing import Any
 
 import pytest
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, connection, transaction
+from django.utils import timezone
 
 from apps.cases.services.public import CasesService
 from apps.crm.services.public import CrmService
@@ -13,8 +15,11 @@ from apps.ledger.dto import PostingLine
 from apps.ledger.exceptions import (
     AlreadyReversed,
     CannotReverseReversal,
+    DateOutOfRange,
     IdempotencyConflict,
+    InvalidClosure,
     InvalidPosting,
+    PeriodClosed,
     UnbalancedTransaction,
 )
 from apps.ledger.models import LedgerPosting, LedgerTransaction
@@ -23,7 +28,7 @@ from apps.ledger.services.public import LedgerService
 from apps.tenancy.services.public import TenancyService
 from tests.conftest import AgencyFixture, runtime_role
 
-TODAY = date(2026, 10, 27)
+TODAY = timezone.localdate()
 
 
 def new_case(agency: AgencyFixture) -> uuid.UUID:
@@ -239,11 +244,11 @@ def test_the_first_sale_date_ignores_reversed_sales(
         case_id=case_id,
         price_xaf=100,
         cost_xaf=0,
-        occurred_on=date(2026, 11, 2),
+        occurred_on=TODAY - timedelta(days=3),
         created_by=None,
         idempotency_key="right",
     )
-    assert LedgerService.first_sale_dates(scoped.agent) == {case_id: date(2026, 11, 2)}
+    assert LedgerService.first_sale_dates(scoped.agent) == {case_id: TODAY - timedelta(days=3)}
 
 
 def test_the_database_refuses_to_alter_a_posting_even_for_the_privileged_role(
@@ -300,3 +305,70 @@ def test_an_entry_for_a_case_that_does_not_exist_is_refused(agency_a: AgencyFixt
             occurred_on=TODAY,
             idempotency_key="ghost",
         )
+
+
+def sale_on(agency: AgencyFixture, case_id: uuid.UUID, day: date, key: str):
+    return LedgerService.record_sale(
+        agency.agent,
+        case_id=case_id,
+        price_xaf=100,
+        cost_xaf=50,
+        occurred_on=day,
+        idempotency_key=key,
+    )
+
+
+def test_an_entry_cannot_be_dated_in_the_future(scoped: AgencyFixture, case_id: uuid.UUID) -> None:
+    with pytest.raises(DateOutOfRange):
+        sale_on(scoped, case_id, TODAY + timedelta(days=1), "future")
+
+
+def test_an_entry_cannot_go_back_beyond_the_retroactivity_window(
+    scoped: AgencyFixture, case_id: uuid.UUID, settings: Any
+) -> None:
+    limit = settings.LEDGER_RETROACTIVITY_DAYS
+    sale_on(scoped, case_id, TODAY - timedelta(days=limit), "edge")
+    with pytest.raises(DateOutOfRange):
+        sale_on(scoped, case_id, TODAY - timedelta(days=limit + 1), "too-old")
+
+
+def test_a_closed_period_refuses_entries_and_never_moves_back(
+    scoped: AgencyFixture, case_id: uuid.UUID
+) -> None:
+    closed = TODAY - timedelta(days=5)
+    LedgerService.close_period(scoped.manager, closed_until=closed)
+    assert LedgerService.closed_until(scoped.manager) == closed
+
+    with pytest.raises(PeriodClosed):
+        sale_on(scoped, case_id, closed, "in-closed")
+    sale_on(scoped, case_id, closed + timedelta(days=1), "open")
+    with pytest.raises(InvalidClosure):
+        LedgerService.close_period(scoped.manager, closed_until=closed)
+    with pytest.raises(InvalidClosure):
+        LedgerService.close_period(scoped.manager, closed_until=TODAY + timedelta(days=1))
+
+
+def test_a_reversal_cannot_be_dated_in_a_closed_period(
+    scoped: AgencyFixture, case_id: uuid.UUID
+) -> None:
+    original = sale_on(scoped, case_id, TODAY - timedelta(days=10), "old-sale")
+    LedgerService.close_period(scoped.manager, closed_until=TODAY - timedelta(days=5))
+    with pytest.raises(PeriodClosed):
+        LedgerService.reverse(
+            scoped.manager, transaction_id=original.id, occurred_on=TODAY - timedelta(days=10)
+        )
+    LedgerService.reverse(scoped.manager, transaction_id=original.id, occurred_on=TODAY)
+
+
+def test_only_a_manager_closes_a_period(scoped: AgencyFixture) -> None:
+    with pytest.raises(PermissionDenied):
+        LedgerService.close_period(scoped.agent, closed_until=TODAY - timedelta(days=1))
+
+
+def test_replaying_an_old_entry_still_returns_it_after_the_window(
+    scoped: AgencyFixture, case_id: uuid.UUID
+) -> None:
+    first = sale_on(scoped, case_id, TODAY - timedelta(days=3), "replay")
+    LedgerService.close_period(scoped.manager, closed_until=TODAY - timedelta(days=1))
+    again = sale_on(scoped, case_id, TODAY - timedelta(days=3), "replay")
+    assert again.id == first.id

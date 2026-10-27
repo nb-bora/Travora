@@ -1,12 +1,12 @@
 from datetime import date
 from uuid import UUID
 
-from django.db.models import BigIntegerField, Case, F, Min, Sum, When
+from django.db.models import BigIntegerField, Case, F, Max, Min, Sum, When
 
 from apps.ledger.constants import Account, Direction, TransactionKind
 from apps.ledger.dto import PostingLine, TransactionInfo
 from apps.ledger.exceptions import TransactionNotFound
-from apps.ledger.models import LedgerPosting, LedgerTransaction
+from apps.ledger.models import LedgerPosting, LedgerTransaction, PeriodClosure
 
 DEBIT_POSITIVE = Case(
     When(direction=Direction.DEBIT, then=F("amount_xaf")),
@@ -72,3 +72,8 @@ def first_sale_dates() -> dict[UUID, date]:
         .annotate(first=Min("occurred_on"))
     )
     return {row["case_id"]: row["first"] for row in rows}
+
+
+def closed_until() -> date | None:
+    """Dernière date clôturée de l'agence courante, ou ``None``."""
+    return PeriodClosure.objects.aggregate(latest=Max("closed_until"))["latest"]

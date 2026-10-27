@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from io import StringIO
 from pathlib import Path
 
@@ -178,3 +178,25 @@ def test_suspending_twice_or_an_unknown_user_is_handled(agency: str) -> None:
     run("set_agency_status", "--user", "alice", "--suspend")
     with pytest.raises(CommandError, match="Utilisateur inconnu"):
         run("set_agency_status", "--user", "personne", "--suspend")
+
+
+def test_a_manager_closes_a_period_and_the_import_then_refuses_closed_dates(
+    agency: str, tmp_path: Path
+) -> None:
+    yesterday = timezone.localdate() - timedelta(days=1)
+    run("close_period", "--as", "alice", "--until", yesterday.isoformat())
+    with pytest.raises(CommandError, match="clôturée"):
+        run("close_period", "--as", "alice", "--until", yesterday.isoformat())
+    with pytest.raises(CommandError, match="Seul un gérant"):
+        run("close_period", "--as", "bob", "--until", yesterday.isoformat())
+    with pytest.raises(CommandError, match="en erreur : aucun enregistrement"):
+        run(
+            "import_cases",
+            "--as",
+            "alice",
+            "--file",
+            write_csv(tmp_path),
+            "--sale-date",
+            yesterday.isoformat(),
+            "--commit",
+        )

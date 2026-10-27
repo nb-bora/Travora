@@ -1,8 +1,10 @@
 from collections.abc import Sequence
-from datetime import date
+from datetime import date, timedelta
 from uuid import UUID
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from apps.ledger import selectors
 from apps.ledger.constants import TREASURY_ACCOUNTS, Account, Direction, TransactionKind
@@ -10,11 +12,14 @@ from apps.ledger.dto import PostingLine, TransactionInfo
 from apps.ledger.exceptions import (
     AlreadyReversed,
     CannotReverseReversal,
+    DateOutOfRange,
     IdempotencyConflict,
+    InvalidClosure,
     InvalidPosting,
+    PeriodClosed,
     UnbalancedTransaction,
 )
-from apps.ledger.models import LedgerPosting, LedgerTransaction
+from apps.ledger.models import LedgerPosting, LedgerTransaction, PeriodClosure
 from apps.shared_kernel.tenant_context import require_agency_id
 
 
@@ -28,6 +33,33 @@ def _validate(lines: Sequence[PostingLine]) -> None:
     credit = sum(line.amount_xaf for line in lines if line.direction is Direction.CREDIT)
     if debit != credit:
         raise UnbalancedTransaction(f"Débits ({debit}) et crédits ({credit}) diffèrent.")
+
+
+def _check_date(occurred_on: date) -> None:
+    """Une date comptable n'est ni future, ni trop ancienne, ni dans une période clôturée."""
+    today = timezone.localdate()
+    if occurred_on > today:
+        raise DateOutOfRange("La date d'une écriture ne peut pas être dans le futur.")
+    earliest = today - timedelta(days=settings.LEDGER_RETROACTIVITY_DAYS)
+    if occurred_on < earliest:
+        raise DateOutOfRange(
+            f"La date d'une écriture ne remonte pas à plus de "
+            f"{settings.LEDGER_RETROACTIVITY_DAYS} jours."
+        )
+    closed_until = selectors.closed_until()
+    if closed_until is not None and occurred_on <= closed_until:
+        raise PeriodClosed(f"La période est clôturée jusqu'au {closed_until.isoformat()}.")
+
+
+def close_period(*, closed_until: date, closed_by: UUID) -> date:
+    """Clôture la comptabilité jusqu'à ``closed_until`` inclus. Ne recule jamais."""
+    if closed_until > timezone.localdate():
+        raise InvalidClosure("On ne clôture pas une période qui n'est pas terminée.")
+    current = selectors.closed_until()
+    if current is not None and closed_until <= current:
+        raise InvalidClosure(f"La période est déjà clôturée jusqu'au {current.isoformat()}.")
+    PeriodClosure.objects.create(closed_until=closed_until, closed_by=closed_by)
+    return closed_until
 
 
 def post_transaction(
@@ -46,6 +78,7 @@ def post_transaction(
         existing = selectors.find_by_idempotency_key(idempotency_key)
         if existing is not None:
             return _same_or_conflict(existing, case_id, kind, lines)
+    _check_date(occurred_on)
     agency_id = require_agency_id()
     try:
         with transaction.atomic():
