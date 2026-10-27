@@ -18,6 +18,16 @@ class WebForm(forms.Form):
         super().__init__(*args, **kwargs)
 
 
+class OnceForm(WebForm):
+    """Formulaire d'écriture : un jeton caché empêche qu'un double envoi crée deux fois."""
+
+    submission_id = forms.CharField(widget=forms.HiddenInput, max_length=64, required=False)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["submission_id"].initial = lambda: uuid.uuid4().hex
+
+
 def _amount(label: str, *, required: bool = True) -> forms.IntegerField:
     return forms.IntegerField(
         label=label,
@@ -29,17 +39,19 @@ def _amount(label: str, *, required: bool = True) -> forms.IntegerField:
     )
 
 
-class CaseForm(WebForm):
+class CaseForm(OnceForm):
     customer_name = forms.CharField(label="Nom du client", max_length=200)
     customer_phone = forms.CharField(
         label="Téléphone (format international)", max_length=32, required=False
     )
     departure_date = forms.DateField(
-        label="Date de départ", required=False, widget=forms.DateInput(attrs={"type": "date"})
+        label="Date de départ",
+        required=False,
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
     )
 
 
-class LineForm(WebForm):
+class LineForm(OnceForm):
     kind = forms.ChoiceField(label="Type", choices=LineKind.choices)
     label = forms.CharField(label="Libellé (trajet, prestation)", max_length=200)
     passenger_name = forms.CharField(label="Passager", max_length=200, required=False)
@@ -60,7 +72,7 @@ class PaymentForm(WebForm):
     )
     reference = forms.CharField(label="Référence", max_length=64, required=False)
     received_on = forms.DateField(
-        label="Date de réception", widget=forms.DateInput(attrs={"type": "date"})
+        label="Date de réception", widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"})
     )
     idempotency_key = forms.CharField(widget=forms.HiddenInput, max_length=64)
 
@@ -79,7 +91,7 @@ MODE_CHOICES = [
 ]
 
 
-class QuickEntryForm(WebForm):
+class QuickEntryForm(OnceForm):
     """Saisie rapide : client, dossier et première ligne en un seul geste."""
 
     kind = forms.ChoiceField(
@@ -102,7 +114,9 @@ class QuickEntryForm(WebForm):
     )
     service_label = forms.CharField(label="Prestation", max_length=200, required=False)
     departure_date = forms.DateField(
-        label="Date de départ", required=False, widget=forms.DateInput(attrs={"type": "date"})
+        label="Date de départ",
+        required=False,
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
     )
     customer_name = forms.CharField(label="Client", max_length=200)
     customer_phone = forms.CharField(label="Téléphone (+indicatif)", max_length=32, required=False)
@@ -116,6 +130,9 @@ class QuickEntryForm(WebForm):
         data = super().clean() or {}
         kind = data.get("kind")
         if kind == LineKind.FREE_SERVICE.value:
+            # Les champs propres aux billets sont masqués pour une prestation : on les ignore.
+            data["ticket_number"] = ""
+            data["carrier"] = ""
             if not data.get("service_label", "").strip():
                 self.add_error("service_label", "Décrivez la prestation.")
             data["label"] = data.get("service_label", "").strip()

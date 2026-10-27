@@ -79,14 +79,14 @@ class LedgerService:
         )
 
     @staticmethod
-    def balances_by_case(actor: Actor) -> dict[UUID, int]:
-        return selectors.balances_by_case()
+    def balances_by_case(actor: Actor, *, case_id: UUID | None = None) -> dict[UUID, int]:
+        return selectors.balances_by_case(case_id)
 
     @staticmethod
-    def margins_by_case(actor: Actor) -> dict[UUID, int]:
+    def margins_by_case(actor: Actor, *, case_id: UUID | None = None) -> dict[UUID, int]:
         actor.require_manager()
-        return selectors.margins_by_case()
+        return selectors.margins_by_case(case_id)
 
     @staticmethod
-    def first_sale_dates(actor: Actor) -> dict[UUID, date]:
-        return selectors.first_sale_dates()
+    def first_sale_dates(actor: Actor, *, case_id: UUID | None = None) -> dict[UUID, date]:
+        return selectors.first_sale_dates(case_id)

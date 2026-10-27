@@ -10,10 +10,10 @@
       <span class="muted">&nbsp;Départ : {{ summary.departure_date|date:"j N Y"|default:"non précisé" }}</span></p>
   </div>
   <div class="card balance">
-    <div><p class="stat-label">Solde dû</p><p class="stat-value" style="font-size:28px;font-weight:600;letter-spacing:-0.02em">{{ summary.balance_xaf|xaf }}</p></div>
+    <div><p class="stat-label">Solde dû</p><p class="stat-value stat-value-lg">{{ summary.balance_xaf|xaf }}</p></div>
     {% if is_manager %}
     <div class="sep"><p class="stat-label">Marge prévue</p>
-      <p class="stat-value" style="font-size:28px;font-weight:600;letter-spacing:-0.02em">{% if summary.has_unknown_cost %}<span class="badge badge-warning">Coût à saisir</span>{% else %}{{ summary.expected_margin_xaf|xaf }}{% endif %}</p></div>
+      <p class="stat-value stat-value-lg">{% if summary.has_unknown_cost %}<span class="badge badge-warning">Coût à saisir</span>{% else %}{{ summary.expected_margin_xaf|xaf }}{% endif %}</p></div>
     {% endif %}
   </div>
 </header>
@@ -39,7 +39,7 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ line.kind|kind_icon }}"/></svg>
               <span><strong>{{ line.label }}</strong><small>{{ line.kind.label }}{% if line.carrier %} · {{ line.carrier }}{% endif %}</small></span></span></td>
             <td>{{ line.passenger_name|default:"—" }}</td>
-            <td style="font-variant-numeric:tabular-nums">{{ line.ticket_number|default:"—" }}</td>
+            <td class="tabular">{{ line.ticket_number|default:"—" }}</td>
             <td class="num">{{ line.price_xaf|xaf }}</td>
             {% if is_manager %}
             <td class="num">{% if line.cost_xaf is None %}<span class="badge badge-warning">À saisir</span>{% else %}{{ line.cost_xaf|xaf }}{% endif %}</td>
@@ -70,6 +70,7 @@
           Ajouter une ligne</summary>
         <form method="post" action="{% url 'web:line_add' summary.id %}" class="form">
           {% csrf_token %}
+          {{ line_form.submission_id }}
           {% include "web/_field.html" with field=line_form.kind %}
           {% include "web/_field.html" with field=line_form.label %}
           {% include "web/_field.html" with field=line_form.passenger_name %}
@@ -94,7 +95,10 @@
           <div class="pay-main"><strong>{{ payment.method.label }}{% if payment.reference %} · {{ payment.reference }}{% endif %}</strong>
             <div class="muted">{{ payment.received_on|date:"j N Y" }}</div></div>
           <span class="strong num">{{ payment.amount_xaf|xaf }}</span>
-          {% if payment.is_voided %}<span class="badge badge-danger">✕ Annulé</span>{% endif %}
+          {% if payment.is_voided %}<span class="badge badge-danger">✕ Annulé</span>
+          {% elif is_manager and is_open %}
+          <form method="post" action="{% url 'web:payment_void' summary.id payment.id %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Annuler</button></form>
+          {% endif %}
         </li>
         {% endfor %}
       </ul>
@@ -107,7 +111,7 @@
   <aside class="layout-aside" aria-label="Actions">
     {% if is_open %}
     <section class="card" aria-labelledby="add-payment-title">
-      <h2 id="add-payment-title" style="margin-bottom:12px">Encaisser</h2>
+      <h2 id="add-payment-title" class="card-title">Encaisser</h2>
       <form method="post" action="{% url 'web:payment_add' summary.id %}" class="form">
         {% csrf_token %}
         {% include "web/_field.html" with field=payment_form.method %}
@@ -119,7 +123,7 @@
       </form>
     </section>
     <section class="card" aria-labelledby="actions-title">
-      <h2 id="actions-title" style="margin-bottom:12px">Autres actions</h2>
+      <h2 id="actions-title" class="card-title">Autres actions</h2>
       <form method="post" action="{% url 'web:case_close' summary.id %}" class="form">
         {% csrf_token %}
         <button class="btn btn-secondary" type="submit">Clore le dossier</button>
@@ -128,7 +132,7 @@
     </section>
     {% elif summary.status.value == "closed" and is_manager %}
     <section class="card" aria-labelledby="reopen-title">
-      <h2 id="reopen-title" style="margin-bottom:12px">Dossier clos</h2>
+      <h2 id="reopen-title" class="card-title">Dossier clos</h2>
       <form method="post" action="{% url 'web:case_reopen' summary.id %}" class="form">
         {% csrf_token %}
         <button class="btn btn-secondary" type="submit">Rouvrir le dossier</button>

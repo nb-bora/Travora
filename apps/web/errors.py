@@ -13,13 +13,21 @@ from apps.cases.exceptions import (
     CaseError,
     CaseHasActiveSales,
     CaseNotClosed,
+    CaseNotFound,
     CaseNotOpen,
     InvalidLine,
     LineLocked,
+    LineNotFound,
 )
 from apps.crm.exceptions import InvalidPhoneNumber
 from apps.ledger.exceptions import LedgerError
-from apps.payments.exceptions import DuplicateReference, InvalidPayment, PaymentError
+from apps.payments.exceptions import (
+    DuplicateReference,
+    InvalidPayment,
+    PaymentAlreadyVoided,
+    PaymentError,
+    PaymentNotFound,
+)
 
 
 def explain(error: Exception) -> str:
@@ -35,12 +43,14 @@ def explain(error: Exception) -> str:
         return "Annulez d'abord les lignes émises de ce dossier."
     if isinstance(error, DuplicateReference):
         return "Cette référence de paiement existe déjà dans l'agence."
+    if isinstance(error, (CaseNotFound, LineNotFound, PaymentNotFound, PaymentAlreadyVoided)):
+        return "Cet élément n'existe plus ou a déjà été traité."
     if isinstance(error, (InvalidLine, InvalidPayment, BalanceNotSettled, InvalidPhoneNumber)):
         return str(error)
     if isinstance(error, (LedgerError, CaseError, PaymentError)):
         return str(error) or "Opération refusée."
     if isinstance(error, IntegrityError):
-        return "Ce numéro de billet ou cette référence est déjà utilisé."
+        return "Cette valeur est déjà utilisée (numéro de billet, référence de paiement…)."
     raise error
 
 

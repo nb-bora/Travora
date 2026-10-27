@@ -2,8 +2,10 @@
 {% load web_extras %}
 {% block title %}Aujourd'hui · Travora{% endblock %}
 {% block content %}
+{% include "web/_paste.html" %}
 <form method="post" action="{% url 'web:quick_entry' %}" class="hero" aria-labelledby="quick-title" novalidate>
   {% csrf_token %}
+  {{ quick_form.submission_id }}
   <div class="hero-head">
     <div>
       <h1 id="quick-title">Nouveau dossier</h1>

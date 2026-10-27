@@ -1,3 +1,4 @@
+import string
 from datetime import date
 from uuid import UUID
 
@@ -65,11 +66,24 @@ def require_open_case(case_id: UUID) -> Case:
     return case
 
 
+ASCII_DIGITS = frozenset("0123456789")
+ASCII_ALNUM = frozenset(string.ascii_letters + string.digits)
+MAX_REFERENCE = 32
+
+
 def _clean_reference(kind: LineKind, raw: str) -> str:
-    """Billet aérien : chiffres seuls. Autres titres : code alphanumérique en majuscules."""
+    """Billet aérien : chiffres seuls. Autres titres : code alphanumérique en majuscules.
+
+    Seuls les caractères ASCII sont gardés : ``isdigit``/``isalnum`` acceptent des chiffres
+    exposants ou arabes, et ``upper`` peut allonger certaines lettres (ß, ﬃ).
+    """
     if kind is LineKind.AIR_TICKET:
-        return "".join(character for character in raw if character.isdigit())
-    return "".join(character for character in raw if character.isalnum()).upper()
+        cleaned = "".join(character for character in raw if character in ASCII_DIGITS)
+    else:
+        cleaned = "".join(character for character in raw if character in ASCII_ALNUM).upper()
+    if len(cleaned) > MAX_REFERENCE:
+        raise InvalidLine(f"Une référence de billet compte au plus {MAX_REFERENCE} caractères.")
+    return cleaned
 
 
 def _check_reference(kind: LineKind, reference: str) -> None:
@@ -218,7 +232,7 @@ def void_line(actor: Actor, *, line_id: UUID, voided_on: date) -> CaseLineView:
 
 def close_case(actor: Actor, *, case_id: UUID) -> None:
     case = require_open_case(case_id)
-    balance = LedgerService.balances_by_case(actor).get(case_id, 0)
+    balance = LedgerService.balances_by_case(actor, case_id=case_id).get(case_id, 0)
     if balance != 0:
         raise BalanceNotSettled(f"Solde restant : {balance} XAF.")
     case.status = CaseStatus.CLOSED

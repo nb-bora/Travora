@@ -8,9 +8,9 @@
     <p class="muted">Pour saisir aussi une première ligne en un geste, utilisez la saisie rapide de l'écran « Aujourd'hui ».</p>
   </div>
 </header>
-<form method="post" class="card form" style="max-width: 560px">
+<form method="post" class="card form form-narrow">
   {% csrf_token %}
-  {% for field in form %}{% include "web/_field.html" with field=field %}{% endfor %}
+  {% for field in form %}{% if field.is_hidden %}{{ field }}{% else %}{% include "web/_field.html" with field=field %}{% endif %}{% endfor %}
   <div class="actions">
     <button class="btn btn-primary" type="submit">Créer le dossier</button>
     <a class="btn btn-secondary" href="{% url 'web:case_list' %}">Annuler</a>

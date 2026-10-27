@@ -1,3 +1,5 @@
+import re
+
 from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
@@ -312,7 +314,7 @@ def test_a_failed_quick_entry_leaves_nothing_behind(agency_a: AgencyFixture) -> 
     again = client.post(
         reverse("web:quick_entry"), quick_data(customer_name="Autre Client", customer_phone="")
     )  # même numéro de billet : refusé
-    assert again.status_code == 302
+    assert again.status_code == 422
     listing = client.get(reverse("web:case_list")).content.decode()
     assert "Autre Client" not in listing
     assert listing.count("Marie Ndong") == 1
@@ -345,3 +347,241 @@ def test_the_shell_shows_the_agency_and_the_role(agency_a: AgencyFixture) -> Non
     page = login("alpha-agent").get(reverse("web:today")).content.decode()
     assert "Alpha" in page
     assert ">Agent<" in page
+
+
+def test_every_page_ships_a_strict_content_security_policy(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    for url in (reverse("web:today"), reverse("web:case_list"), reverse("web:case_create")):
+        response = client.get(url)
+        policy = response["Content-Security-Policy"]
+        assert "default-src 'none'" in policy
+        assert "script-src 'self'" in policy
+        assert "frame-ancestors 'none'" in policy
+        assert "unsafe-inline" not in policy
+        assert response["Referrer-Policy"] == "same-origin"
+
+
+def test_templates_use_no_inline_style_or_script(agency_a: AgencyFixture) -> None:
+    """La politique interdit les styles et scripts en ligne : le HTML ne doit pas en contenir."""
+    manager = login("alpha-manager")
+    url = create_case_via_web(manager)
+    add_line_via_web(manager, url)
+    pages = [
+        Client().get(reverse("web:login")),
+        manager.get(reverse("web:today")),
+        manager.get(reverse("web:case_list")),
+        manager.get(url),
+        manager.get(reverse("web:case_create")),
+    ]
+    for response in pages:
+        body = response.content.decode()
+        assert " style=" not in body
+        assert "<script>" not in body
+        assert " onclick=" not in body.lower()
+
+
+ETICKET = (
+    "Passenger : NDONG/MARIE MS\nTicket number : 057-2345678901\nBooking ref : K7QX2B\n"
+    "Airline : AIR FRANCE\nDLA -> CDG\nDeparture : 20 NOV 2026 09:15\nFare : XAF 520000\n"
+)
+
+
+def test_pasting_a_ticket_prefills_the_quick_entry_and_saves_nothing(
+    agency_a: AgencyFixture,
+) -> None:
+    manager = login("alpha-manager")
+    response = manager.post(reverse("web:paste_booking"), {"text": ETICKET})
+    page = response.content.decode()
+
+    assert response.status_code == 200
+    assert "Reconnu dans le texte" in page
+    for expected in ("0572345678901", "NDONG/MARIE MS", "DLA → CDG", "Air France", "K7QX2B"):
+        assert expected in page
+    assert 'value="Marie Ndong"' in page
+    assert 'value="520000"' in page
+    assert (
+        "Marie Ndong"
+        not in manager.get(reverse("web:case_list"), {"etat": "tous"}).content.decode()
+    )
+
+
+def test_pasting_ordinary_text_says_nothing_was_recognised(agency_a: AgencyFixture) -> None:
+    response = login("alpha-agent").post(
+        reverse("web:paste_booking"), {"text": "Bonjour, merci de me rappeler demain."}
+    )
+    assert response.status_code == 200
+    assert "Aucun billet reconnu" in response.content.decode()
+
+
+def test_the_pasted_text_is_escaped_and_bounded(agency_a: AgencyFixture) -> None:
+    hostile = "<script>alert(1)</script>" + "x" * 30_000
+    page = login("alpha-manager").post(reverse("web:paste_booking"), {"text": hostile})
+    body = page.content.decode()
+    assert "<script>alert(1)</script>" not in body
+    assert "&lt;script&gt;" in body
+    assert body.count("x" * 100) < 250  # tronqué à 20 000 caractères
+
+
+def test_pasting_requires_a_post_and_a_login(agency_a: AgencyFixture) -> None:
+    assert login("alpha-manager").get(reverse("web:paste_booking")).status_code == 405
+    assert Client().post(reverse("web:paste_booking"), {"text": ETICKET}).status_code == 302
+
+
+def test_the_client_list_shows_balances_and_a_whatsapp_reminder(agency_a: AgencyFixture) -> None:
+    manager = login("alpha-manager")
+    url = create_case_via_web(manager)
+    add_line_via_web(manager, url)
+    line_id = manager.get(url).content.decode().split("/lignes/")[1].split("/")[0]
+    manager.post(f"{url}lignes/{line_id}/emettre/")
+
+    page = manager.get(reverse("web:customer_list")).content.decode()
+
+    assert "Marie Ndong" in page
+    assert "500 000" in page
+    assert "https://wa.me/237677123456?text=" in page
+    assert 'rel="noopener noreferrer"' in page
+    assert "Marie%20Ndong" in page or "Marie Ndong" in page
+    assert (
+        "Marie Ndong"
+        not in manager.get(reverse("web:customer_list"), {"q": "zzz"}).content.decode()
+    )
+
+
+def test_clients_of_another_agency_never_appear(
+    agency_a: AgencyFixture, agency_b: AgencyFixture
+) -> None:
+    create_case_via_web(login("alpha-manager"))
+    assert (
+        "Marie Ndong"
+        not in login("bravo-manager").get(reverse("web:customer_list")).content.decode()
+    )
+
+
+def test_only_the_manager_voids_a_payment(agency_a: AgencyFixture) -> None:
+    manager = login("alpha-manager")
+    url = create_case_via_web(manager)
+    add_line_via_web(manager, url)
+    line_id = manager.get(url).content.decode().split("/lignes/")[1].split("/")[0]
+    manager.post(f"{url}lignes/{line_id}/emettre/")
+    payment = {
+        "method": "mobile_money",
+        "amount_xaf": "100000",
+        "reference": "MP-9",
+        "received_on": str(timezone.localdate()),
+        "idempotency_key": "void1",
+    }
+    manager.post(f"{url}encaissements/", payment)
+    page = manager.get(url).content.decode()
+    found = re.search(r"/encaissements/([0-9a-f-]{36})/annuler/", page)
+    assert found is not None
+    payment_id = found.group(1)
+
+    agent = login("alpha-agent")
+    refused = agent.post(f"{url}encaissements/{payment_id}/annuler/", follow=True)
+    assert "réservée au gérant" in refused.content.decode()
+
+    manager.post(f"{url}encaissements/{payment_id}/annuler/")
+    assert "Annulé" in manager.get(url).content.decode()
+
+
+def test_a_pasted_departure_date_reaches_the_date_field_in_iso_format(
+    agency_a: AgencyFixture,
+) -> None:
+    page = login("alpha-manager").post(reverse("web:paste_booking"), {"text": ETICKET}).content
+    assert 'value="2026-11-20"' in page.decode()
+
+
+def hidden_value(page: str, name: str) -> str:
+    found = re.search(rf'name="{name}"[^>]*value="([^"]*)"', page)
+    assert found is not None, name
+    return found.group(1)
+
+
+def test_a_payment_with_the_form_generated_key_is_recorded(agency_a: AgencyFixture) -> None:
+    """Régression : la clé générée par le formulaire dépassait la colonne et donnait un 500."""
+    manager = login("alpha-manager")
+    url = create_case_via_web(manager)
+    add_line_via_web(manager, url)
+    line_id = manager.get(url).content.decode().split("/lignes/")[1].split("/")[0]
+    manager.post(f"{url}lignes/{line_id}/emettre/")
+
+    page = manager.get(url).content.decode()
+    key = hidden_value(page, "idempotency_key")
+    response = manager.post(
+        f"{url}encaissements/",
+        {
+            "method": "cash",
+            "amount_xaf": "100000",
+            "reference": "",
+            "received_on": str(timezone.localdate()),
+            "idempotency_key": key,
+        },
+    )
+    assert response.status_code == 302
+    assert "Encaissement enregistré" in manager.get(url).content.decode()
+
+
+def test_a_double_submit_of_the_quick_entry_creates_one_case(agency_a: AgencyFixture) -> None:
+    manager = login("alpha-manager")
+    page = manager.get(reverse("web:today")).content.decode()
+    token = hidden_value(page, "submission_id")
+    data = quick_data(ticket_number="", customer_phone="") | {"submission_id": token}
+
+    first = manager.post(reverse("web:quick_entry"), data)
+    second = manager.post(reverse("web:quick_entry"), data)
+
+    assert first.status_code == second.status_code == 302
+    assert first["Location"] == second["Location"]
+    listing = manager.get(reverse("web:case_list"), {"etat": "tous"}).content.decode()
+    assert listing.count("Marie Ndong") == 1
+
+
+def test_a_domain_refusal_keeps_the_quick_entry_input(agency_a: AgencyFixture) -> None:
+    manager = login("alpha-manager")
+    manager.post(reverse("web:quick_entry"), quick_data())
+    again = manager.post(
+        reverse("web:quick_entry"), quick_data(customer_name="Autre Client", customer_phone="")
+    )  # même numéro de billet
+    body = again.content.decode()
+    assert again.status_code == 422
+    assert 'value="Autre Client"' in body
+    assert "déjà utilisée" in body
+
+
+def test_a_service_ignores_the_ticket_fields_that_are_hidden(agency_a: AgencyFixture) -> None:
+    response = login("alpha-manager").post(
+        reverse("web:quick_entry"),
+        {
+            "kind": "free_service",
+            "service_label": "Visa",
+            "customer_name": "Paul Eto",
+            "price_xaf": "80000",
+            "ticket_number": "057 2345678901",  # champ masqué mais envoyé
+            "carrier": "Air France",
+        },
+    )
+    assert response.status_code == 302
+
+
+def test_a_line_of_another_case_cannot_be_acted_on_through_this_case(
+    agency_a: AgencyFixture,
+) -> None:
+    manager = login("alpha-manager")
+    first = create_case_via_web(manager, "Premier Client")
+    second = create_case_via_web(manager, "Second Client")
+    add_line_via_web(manager, first)
+    line_id = manager.get(first).content.decode().split("/lignes/")[1].split("/")[0]
+    assert manager.post(f"{second}lignes/{line_id}/emettre/").status_code == 404
+
+
+def test_a_post_after_the_session_expired_restarts_from_the_home_page(db: None) -> None:
+    response = Client().post("/dossiers/00000000-0000-0000-0000-000000000001/clore/")
+    assert response.status_code == 302
+    assert response["Location"] == "/connexion/?next=/"
+
+
+def test_authenticated_pages_are_never_cached(agency_a: AgencyFixture) -> None:
+    response = login("alpha-manager").get(reverse("web:today"))
+    cache_control = response["Cache-Control"]
+    assert "no-store" in cache_control
+    assert "private" in cache_control

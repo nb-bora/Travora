@@ -1,12 +1,17 @@
+import uuid
+from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import cast
+from urllib.parse import quote
 from uuid import UUID
 
-from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
+from django.utils.cache import patch_cache_control
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.cases.constants import CaseStatus, LineKind
@@ -20,7 +25,8 @@ from apps.payments.constants import PaymentMethod
 from apps.payments.services.public import PaymentsService
 from apps.shared_kernel.actor import Actor
 from apps.tenancy.middleware import TenantRequest
-from apps.web.errors import attempt, reporting
+from apps.tenancy.services.public import TenancyService
+from apps.web.errors import attempt
 from apps.web.forms import CaseForm, LineForm, PaymentForm, QuickEntryForm
 
 
@@ -40,11 +46,15 @@ def agency_required(view):  # type: ignore[no-untyped-def]
 
     def wrapper(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
         if not request.user.is_authenticated:
-            return redirect_to_login(request.get_full_path())
+            # Après une session expirée, un POST ne se rejoue pas : on repart de l'accueil.
+            target = request.get_full_path() if request.method in ("GET", "HEAD") else "/"
+            return redirect_to_login(target)
         try:
-            return view(request, *args, **kwargs)
+            response = view(request, *args, **kwargs)
         except NoAgency:
-            return render(request, "web/no_agency.html", status=403)
+            response = render(request, "web/no_agency.html", status=403)
+        patch_cache_control(response, no_store=True, private=True)
+        return response
 
     wrapper.__name__ = view.__name__
     return wrapper
@@ -73,6 +83,50 @@ def today(request: HttpRequest) -> HttpResponse:
     return render(request, "web/today.html", _today_context(_actor(request)))
 
 
+MAX_PASTE = 5_000
+DONE_KEY = "done_submissions"
+REMEMBERED = 40
+
+
+def _already_done(request: HttpRequest, token: str) -> str | None:
+    """Adresse du résultat d'un envoi déjà traité avec ce jeton (double clic, rejeu réseau)."""
+    done: dict[str, str] = request.session.get(DONE_KEY, {})
+    return done.get(token) if token else None
+
+
+def _remember(request: HttpRequest, token: str, url: str) -> None:
+    if not token:
+        return
+    done: dict[str, str] = request.session.get(DONE_KEY, {})
+    done[token] = url
+    request.session[DONE_KEY] = dict(list(done.items())[-REMEMBERED:])
+
+
+@agency_required
+@require_POST
+def paste_booking(request: HttpRequest) -> HttpResponse:
+    """Lit un texte collé et pré-remplit la saisie rapide. Rien n'est enregistré."""
+    actor = _actor(request)
+    text = request.POST.get("text", "")[:MAX_PASTE]
+    proposal = CasesService.propose_booking(text, today=timezone.localdate())
+    initial: dict[str, object] = {}
+    if proposal.recognised:
+        initial = {
+            "kind": LineKind.AIR_TICKET.value,
+            "origin": proposal.origin,
+            "destination": proposal.destination,
+            "departure_date": proposal.departure_date,
+            "customer_name": proposal.customer_name,
+            "passenger_name": proposal.passengers[0] if proposal.passengers else "",
+            "carrier": proposal.carrier,
+            "ticket_number": proposal.ticket_numbers[0] if proposal.ticket_numbers else "",
+            "price_xaf": proposal.price_xaf,
+        }
+    context = _today_context(actor, QuickEntryForm(initial=initial))
+    context.update({"proposal": proposal, "pasted_text": text})
+    return render(request, "web/today.html", context)
+
+
 @agency_required
 @require_POST
 def quick_entry(request: HttpRequest) -> HttpResponse:
@@ -82,8 +136,11 @@ def quick_entry(request: HttpRequest) -> HttpResponse:
     if not form.is_valid():
         return render(request, "web/today.html", _today_context(actor, form), status=422)
     data = form.cleaned_data
-    case_id: UUID | None = None
-    with reporting(request):
+    token = data.get("submission_id", "")
+    if (url := _already_done(request, token)) is not None:
+        return redirect(url)
+
+    def create() -> UUID:
         customer = CrmService.find_or_create_customer(
             actor, name=data["customer_name"], phone=data["customer_phone"]
         )
@@ -101,17 +158,21 @@ def quick_entry(request: HttpRequest) -> HttpResponse:
             ticket_number=data["ticket_number"],
             carrier=data["carrier"],
         )
-    if case_id is None:
-        return redirect("web:today")
-    messages.success(request, "Dossier créé avec sa première ligne.")
-    return redirect("web:case_detail", case_id=case_id)
+        return case_id
+
+    case_id = attempt(request, create, "Dossier créé avec sa première ligne.")
+    if case_id is None:  # refus du domaine : la saisie est conservée, le message l'explique
+        return render(request, "web/today.html", _today_context(actor, form), status=422)
+    target = reverse("web:case_detail", kwargs={"case_id": case_id})
+    _remember(request, token, target)
+    return redirect(target)
 
 
-SOON = timedelta(days=7)
+SOON = timedelta(days=settings.UPCOMING_DEPARTURE_DAYS)
 
 FILTERS = {
     "ouverts": "Ouverts",
-    "depart": "Départs sous 7 jours",
+    "depart": f"Départs sous {settings.UPCOMING_DEPARTURE_DAYS} jours",
     "impayes": "Impayés",
     "clos": "Clos",
     "tous": "Tous",
@@ -176,17 +237,23 @@ def case_create(request: HttpRequest) -> HttpResponse:
     form = CaseForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         data = form.cleaned_data
-        case_id: UUID | None = None
-        with reporting(request):
+        token = data.get("submission_id", "")
+        if (url := _already_done(request, token)) is not None:
+            return redirect(url)
+
+        def create() -> UUID:
             customer = CrmService.find_or_create_customer(
                 actor, name=data["customer_name"], phone=data["customer_phone"]
             )
-            case_id = CasesService.create_case(
+            return CasesService.create_case(
                 actor, customer_id=customer.id, departure_date=data["departure_date"]
             )
+
+        case_id = attempt(request, create, "Dossier créé.")
         if case_id is not None:
-            messages.success(request, "Dossier créé.")
-            return redirect("web:case_detail", case_id=case_id)
+            target = reverse("web:case_detail", kwargs={"case_id": case_id})
+            _remember(request, token, target)
+            return redirect(target)
     return render(request, "web/case_form.html", {"form": form})
 
 
@@ -230,7 +297,11 @@ def line_add(request: HttpRequest, case_id: UUID) -> HttpResponse:
         context = _detail_context(request, actor, case_id, line_form=form)
         return render(request, "web/case_detail.html", context, status=422)
     data = form.cleaned_data
-    attempt(
+    token = data.get("submission_id", "")
+    target = reverse("web:case_detail", kwargs={"case_id": case_id})
+    if _already_done(request, token) is not None:
+        return redirect(target)
+    added = attempt(
         request,
         lambda: CasesService.add_line(
             actor,
@@ -245,7 +316,9 @@ def line_add(request: HttpRequest, case_id: UUID) -> HttpResponse:
         ),
         "Ligne ajoutée.",
     )
-    return redirect("web:case_detail", case_id=case_id)
+    if added is not None:
+        _remember(request, token, target)
+    return redirect(target)
 
 
 @agency_required
@@ -266,15 +339,32 @@ def payment_add(request: HttpRequest, case_id: UUID) -> HttpResponse:
             amount_xaf=data["amount_xaf"],
             reference=data["reference"],
             received_on=data["received_on"],
-            idempotency_key=f"web:{case_id}:{data['idempotency_key']}",
+            idempotency_key=f"web:{uuid.uuid5(case_id, data['idempotency_key']).hex}",
         ),
         "Encaissement enregistré.",
     )
     return redirect("web:case_detail", case_id=case_id)
 
 
+def _ensure_belongs(
+    actor: Actor, case_id: UUID, *, line_id: UUID | None = None, payment_id: UUID | None = None
+) -> None:
+    """404 si la ligne ou le paiement n'est pas rattaché au dossier de l'adresse."""
+    try:
+        detail = CasesService.get_case(actor, case_id)
+    except CaseNotFound as error:
+        raise Http404 from error
+    if line_id is not None and line_id not in {line.id for line in detail.lines}:
+        raise Http404
+    if payment_id is not None and payment_id not in {
+        payment.id for payment in PaymentsService.payments_for_case(actor, case_id)
+    }:
+        raise Http404
+
+
 def _line_action(request: HttpRequest, case_id: UUID, line_id: UUID, name: str) -> HttpResponse:
     actor = _actor(request)
+    _ensure_belongs(actor, case_id, line_id=line_id)
     today_ = timezone.localdate()
     if name == "issue":
         attempt(
@@ -317,3 +407,70 @@ def case_reopen(request: HttpRequest, case_id: UUID) -> HttpResponse:
     actor = _actor(request)
     attempt(request, lambda: CasesService.reopen_case(actor, case_id=case_id), "Dossier rouvert.")
     return redirect("web:case_detail", case_id=case_id)
+
+
+@agency_required
+@require_POST
+def payment_void(request: HttpRequest, case_id: UUID, payment_id: UUID) -> HttpResponse:
+    actor = _actor(request)
+    _ensure_belongs(actor, case_id, payment_id=payment_id)
+    today_ = timezone.localdate()
+    attempt(
+        request,
+        lambda: PaymentsService.void_payment(actor, payment_id=payment_id, voided_on=today_),
+        "Encaissement annulé.",
+    )
+    return redirect("web:case_detail", case_id=case_id)
+
+
+@dataclass(frozen=True)
+class CustomerRow:
+    name: str
+    phone: str
+    open: int
+    due: int
+    whatsapp: str
+
+
+def _whatsapp_link(phone: str, name: str, balance_xaf: int, agency: str) -> str:
+    """Lien « cliquer pour discuter » : l'agent envoie lui-même le message depuis WhatsApp."""
+    message = (
+        f"Bonjour {name}, il reste {balance_xaf:,} FCFA à régler pour votre voyage. "
+        f"Pouvez-vous nous indiquer quand vous pourrez effectuer le paiement ? "
+        f"Merci. — {agency}"
+    ).replace(",", " ")
+    return f"https://wa.me/{phone.lstrip('+')}?text={quote(message)}"
+
+
+@agency_required
+@require_GET
+def customer_list(request: HttpRequest) -> HttpResponse:
+    actor = _actor(request)
+    agency = TenancyService.agency_info(actor).name
+    cases = CasesService.list_cases(actor)
+    by_customer: dict[UUID, dict[str, int]] = {}
+    for case in cases:
+        entry = by_customer.setdefault(case.customer_id, {"open": 0, "due": 0})
+        if case.status is CaseStatus.OPEN:
+            entry["open"] += 1
+            entry["due"] += max(case.balance_xaf, 0)
+    query = request.GET.get("q", "").strip().lower()
+    rows: list[CustomerRow] = []
+    for customer in CrmService.list_customers(actor):
+        if query and query not in customer.name.lower() and query not in customer.phone:
+            continue
+        figures = by_customer.get(customer.id, {"open": 0, "due": 0})
+        link = ""
+        if figures["due"] > 0 and customer.phone:
+            link = _whatsapp_link(customer.phone, customer.name, figures["due"], agency)
+        rows.append(
+            CustomerRow(
+                name=customer.name,
+                phone=customer.phone,
+                open=figures["open"],
+                due=figures["due"],
+                whatsapp=link,
+            )
+        )
+    rows.sort(key=lambda row: (-row.due, row.name.lower()))
+    return render(request, "web/customer_list.html", {"rows": rows, "query": query})

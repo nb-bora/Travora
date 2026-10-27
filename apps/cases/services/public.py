@@ -9,9 +9,9 @@ from uuid import UUID
 
 from apps.cases import selectors
 from apps.cases.constants import CaseStatus, LineKind
-from apps.cases.dto import CaseDetail, CaseLineView, CaseSummary
+from apps.cases.dto import CaseDetail, CaseLineView, CaseSummary, TicketProposal
 from apps.cases.services import commands
-from apps.cases.ticket_text import extract_ticket_numbers
+from apps.cases.ticket_text import extract_ticket_numbers, parse_booking_text
 from apps.shared_kernel.actor import Actor
 
 
@@ -115,3 +115,7 @@ class CasesService:
     @staticmethod
     def propose_ticket_numbers(text: str) -> list[str]:
         return extract_ticket_numbers(text)
+
+    @staticmethod
+    def propose_booking(text: str, *, today: date) -> TicketProposal:
+        return parse_booking_text(text, today)

@@ -45,32 +45,29 @@ def find_by_idempotency_key(key: str) -> LedgerTransaction | None:
     return LedgerTransaction.objects.filter(idempotency_key=key).first()
 
 
-def balances_by_case() -> dict[UUID, int]:
+def balances_by_case(case_id: UUID | None = None) -> dict[UUID, int]:
     """Montant que le client doit encore : débits moins crédits du compte client."""
-    rows = (
-        LedgerPosting.objects.filter(account=Account.CLIENT)
-        .values("transaction__case_id")
-        .annotate(total=Sum(DEBIT_POSITIVE))
-    )
+    postings = LedgerPosting.objects.filter(account=Account.CLIENT)
+    if case_id is not None:
+        postings = postings.filter(transaction__case_id=case_id)
+    rows = postings.values("transaction__case_id").annotate(total=Sum(DEBIT_POSITIVE))
     return {row["transaction__case_id"]: row["total"] for row in rows}
 
 
-def margins_by_case() -> dict[UUID, int]:
-    rows = (
-        LedgerPosting.objects.filter(account=Account.MARGIN)
-        .values("transaction__case_id")
-        .annotate(total=Sum(CREDIT_POSITIVE))
-    )
+def margins_by_case(case_id: UUID | None = None) -> dict[UUID, int]:
+    postings = LedgerPosting.objects.filter(account=Account.MARGIN)
+    if case_id is not None:
+        postings = postings.filter(transaction__case_id=case_id)
+    rows = postings.values("transaction__case_id").annotate(total=Sum(CREDIT_POSITIVE))
     return {row["transaction__case_id"]: row["total"] for row in rows}
 
 
-def first_sale_dates() -> dict[UUID, date]:
+def first_sale_dates(case_id: UUID | None = None) -> dict[UUID, date]:
     """Date de la première vente non annulée de chaque dossier."""
-    rows = (
-        LedgerTransaction.objects.filter(kind=TransactionKind.SALE, reversed_by__isnull=True)
-        .values("case_id")
-        .annotate(first=Min("occurred_on"))
-    )
+    sales = LedgerTransaction.objects.filter(kind=TransactionKind.SALE, reversed_by__isnull=True)
+    if case_id is not None:
+        sales = sales.filter(case_id=case_id)
+    rows = sales.values("case_id").annotate(first=Min("occurred_on"))
     return {row["case_id"]: row["first"] for row in rows}
 
 

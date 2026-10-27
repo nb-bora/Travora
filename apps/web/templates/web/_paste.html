@@ -1,0 +1,34 @@
+<section class="card paste" aria-labelledby="paste-title">
+  <form method="post" action="{% url 'web:paste_booking' %}" class="paste-form" id="paste-form">
+    {% csrf_token %}
+    <div class="paste-head">
+      <h2 id="paste-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4h6v3H9zM7 5H5v16h14V5h-2"/></svg>
+        Coller un billet</h2>
+      <span class="muted">E-ticket, e-mail ou message du fournisseur. Travora prépare le dossier, vous confirmez.</span>
+    </div>
+    <label for="paste-text" class="sr-only">Texte du billet</label>
+    <textarea id="paste-text" name="text" rows="3" maxlength="5000" placeholder="Collez ici le texte du billet… (ou collez-le n'importe où sur cette page avec Ctrl V)">{{ pasted_text }}</textarea>
+    <div class="actions"><button class="btn btn-secondary" type="submit">Analyser le texte</button></div>
+  </form>
+
+  {% if proposal %}
+  <div class="paste-result" role="status">
+    {% if proposal.recognised %}
+    <p class="paste-title"><strong>Reconnu dans le texte</strong>
+      <span class="muted">Vérifiez, corrigez, puis créez le dossier ci-dessous.</span></p>
+    <ul class="recognised">
+      {% if proposal.ticket_numbers %}<li><span class="ok" aria-hidden="true">✓</span>Billet <strong class="tabular">{{ proposal.ticket_numbers.0 }}</strong></li>{% endif %}
+      {% if proposal.passengers %}<li><span class="ok" aria-hidden="true">✓</span>Passager <strong>{{ proposal.passengers.0 }}</strong></li>{% endif %}
+      {% if proposal.origin %}<li><span class="ok" aria-hidden="true">✓</span>Trajet <strong>{{ proposal.origin }} → {{ proposal.destination }}</strong></li>{% endif %}
+      {% if proposal.departure_date %}<li><span class="ok" aria-hidden="true">✓</span>Départ <strong>{{ proposal.departure_date|date:"j N Y" }}</strong></li>{% endif %}
+      {% if proposal.carrier %}<li><span class="ok" aria-hidden="true">✓</span>Transporteur <strong>{{ proposal.carrier }}</strong></li>{% endif %}
+      {% if proposal.booking_reference %}<li><span class="ok" aria-hidden="true">✓</span>Référence <strong class="tabular">{{ proposal.booking_reference }}</strong></li>{% endif %}
+    </ul>
+    {% for warning in proposal.warnings %}<p class="alert alert-warning">{{ warning }}</p>{% endfor %}
+    {% else %}
+    <p class="alert alert-warning">Aucun billet reconnu dans ce texte. Saisissez le dossier à la main ci-dessous.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>

@@ -50,6 +50,10 @@ L'agence n'est **jamais** lue dans la requête (paramètre, en-tête, formulaire
 
 `accounts_user` (identité globale, nécessaire avant de connaître l'agence) et les tables de Django (sessions, permissions). `tenancy_agency` et `accounts_membership` ont des politiques particulières (l'agence se voit elle-même ; l'appartenance se lit par `app.user_id`).
 
+### Couche web
+
+`apps/web` est la couche la plus haute : des gabarits serveur, aucune logique métier, uniquement les façades publiques des autres applications (contrat `import-linter`). Les gestes d'écriture passent par POST et s'exécutent dans un point de sauvegarde : une erreur du domaine devient un message clair sans casser la requête. **Politique de sécurité du contenu stricte** (`SECURE_CSP`) : aucun script, style ou ressource hors de l'application, donc aucun style en ligne dans les gabarits (un test le vérifie). Le texte d'un billet collé est lu par un analyseur déterministe (`cases/ticket_text.py`) qui ne fait que **proposer** : rien n'est enregistré avant la confirmation.
+
 ## 3. Journal comptable
 
 - Deux tables : `ledger_transaction` (en-tête) et `ledger_posting` (lignes). Montants **entiers en XAF** (unité mineure 0, liste ISO 4217).
@@ -101,7 +105,7 @@ Deux rôles seulement : **gérant** et **agent**. Les vues renvoyées par les fa
 
 ## 7. Limites connues
 
-- **Pas d'interface web** : seules les commandes du concierge existent. L'interface (htmx) est la suite logique.
+- **Interface web partielle** : connexion, accueil avec saisie rapide et collage de billet, dossiers (liste, détail, lignes, encaissements, clôture), clients avec relance WhatsApp. Pas encore de devis, ni de parcours en plusieurs étapes par mode (voir [13](13-design-et-anticipation.md)).
 - **Hébergement non décidé** (décision juridique, voir [04](04-conformite-et-risques.md)) : l'image est prête, aucun déploiement n'est configuré.
 - **Lien WhatsApp** : le format `wa.me` n'est confirmé que par des sources tierces ; à vérifier sur la documentation officielle avant la mise en production.
 - **Rendu PDF** : vérifié dans l'image Docker, pas sous Windows.
