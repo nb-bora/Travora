@@ -27,8 +27,8 @@
 
   <div class="presets" role="radiogroup" aria-label="Montant reçu">
     <span class="muted">Montant reçu</span>
-    <label class="preset"><input type="radio" name="preset" data-preset="all" checked><span>Tout le solde</span></label>
-    <label class="preset"><input type="radio" name="preset" data-preset="half"><span>50 %</span></label>
+    <label class="preset"><input type="radio" name="preset" data-preset="all"{% if preset == "all" %} checked{% endif %}><span>Tout le solde</span></label>
+    <label class="preset"><input type="radio" name="preset" data-preset="half"{% if preset == "half" %} checked{% endif %}><span>50 %</span></label>
     <label class="preset"><input type="radio" name="preset" data-preset="other"><span>Autre montant</span></label>
   </div>
 

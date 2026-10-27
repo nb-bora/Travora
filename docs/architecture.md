@@ -105,7 +105,7 @@ Deux rôles seulement : **gérant** et **agent**. Les vues renvoyées par les fa
 
 ## 7. Limites connues
 
-- **Interface web partielle** : connexion, accueil avec saisie rapide et collage de billet, dossiers (liste, détail, lignes, encaissements, clôture), clients avec relance WhatsApp. Pas encore de devis, ni de parcours en plusieurs étapes par mode (voir [13](13-design-et-anticipation.md)).
+- **Interface web** : parcours guidés en cinq étapes pour l'avion, le bus, le train et le bateau (brouillon en session, vente confirmée d'un bloc) ; connexion, accueil avec saisie rapide et collage de billet, dossiers (liste, détail, lignes, encaissements, clôture), clients avec relance WhatsApp. Pas encore de devis dans l'interface (voir [13](13-design-et-anticipation.md)). Les détails propres à chaque mode (horaire, place, pièce d'identité, véhicule…) sont stockés dans `details` de la ligne ; base et taxes du tarif aérien n'en sortent jamais vers un agent.
 - **Hébergement non décidé** (décision juridique, voir [04](04-conformite-et-risques.md)) : l'image est prête, aucun déploiement n'est configuré.
 - **Lien WhatsApp** : le format `wa.me` n'est confirmé que par des sources tierces ; à vérifier sur la documentation officielle avant la mise en production.
 - **Rendu PDF** : vérifié dans l'image Docker, pas sous Windows.

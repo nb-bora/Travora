@@ -1,0 +1,19 @@
+{% if timeline %}
+<section class="card" aria-labelledby="cv-t">
+  <div class="section-row"><h2 id="cv-t">Convocation · {{ summary.departure_date|date:"j N Y" }}</h2>{% if ship %}<span class="badge badge-info">{{ ship }}</span>{% endif %}</div>
+  <ol class="boarding">
+    {% for label, time, note in timeline %}
+    <li><span class="boarding-dot" aria-hidden="true"></span>
+      <strong class="boarding-time">{{ time }}</strong><span class="strong">{{ label }}</span><span class="muted">{{ note }}</span></li>
+    {% endfor %}
+  </ol>
+</section>
+{% endif %}
+<section class="card" aria-labelledby="doc-t">
+  <h2 id="doc-t" class="card-title">À présenter au port</h2>
+  <ul class="doc-list">
+    {% for title, note in docs %}
+    <li><span class="doc-box" aria-hidden="true"></span><div><strong>{{ title }}</strong><div class="muted">{{ note }}</div></div></li>
+    {% endfor %}
+  </ul>
+</section>

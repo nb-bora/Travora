@@ -1,0 +1,50 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block total_attrs %} data-terms="id_passenger_price"{% endblock %}
+{% block flow_body %}
+<section class="card" aria-labelledby="route-t">
+  <h2 id="route-t" class="card-title">Traversée</h2>
+  <div class="grid-4">
+    {% include "web/_field.html" with field=form.origin %}
+    {% include "web/_field.html" with field=form.destination %}
+    {% include "web/_field.html" with field=form.departure_date %}
+    {% include "web/_field.html" with field=form.carrier %}
+    {% include "web/_field.html" with field=form.ship %}
+    {% include "web/_field.html" with field=form.passenger_price %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="times-t">
+  <div class="section-row"><h2 id="times-t">Horaires</h2><span class="muted">Saisis par l'agence</span></div>
+  <div class="grid-4">
+    {% include "web/_field.html" with field=form.check_in_opens %}
+    {% include "web/_field.html" with field=form.check_in_closes %}
+    {% include "web/_field.html" with field=form.boarding_time %}
+    {% include "web/_field.html" with field=form.departure_time %}
+    {% include "web/_field.html" with field=form.arrival_time %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="opt-t">
+  <h2 id="opt-t" class="card-title">Options</h2>
+  <div class="option-checks">
+    <label class="option-line"><input type="checkbox" name="{{ form.with_vehicle.html_name }}" id="{{ form.with_vehicle.id_for_label }}"{% if form.with_vehicle.value %} checked{% endif %}> <strong>Transporter un véhicule</strong><span class="muted">Plaque et dimensions à l'étape suivante</span></label>
+    <label class="option-line"><input type="checkbox" name="{{ form.with_cabin.html_name }}" id="{{ form.with_cabin.id_for_label }}"{% if form.with_cabin.value %} checked{% endif %}> <strong>Cabine</strong><span class="muted">Sinon : siège sur le pont</span></label>
+  </div>
+  <div class="grid-3 cost-row">{% include "web/_field.html" with field=form.vehicle_price hint="Seulement si un véhicule est transporté" %}</div>
+</section>
+
+<section class="notice notice-warning" role="note">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+  <div><strong>L'heure de clôture de l'enregistrement est impérative</strong>
+    <p>Elle figurera dans le message au client : au-delà, le passager ne peut plus embarquer.</p></div>
+</section>
+
+<section class="card" aria-labelledby="client-t">
+  <h2 id="client-t" class="card-title">Client</h2>
+  <div class="grid-2">
+    {% include "web/_field.html" with field=form.customer_name %}
+    {% include "web/_field.html" with field=form.customer_phone hint="Retrouvé par son téléphone s'il existe déjà" %}
+  </div>
+</section>
+{% endblock %}

@@ -518,7 +518,10 @@ def flow_pay(request: HttpRequest, case_id: UUID) -> HttpResponse:
             if recorded is not None:
                 return redirect(done_url)
     else:
-        form = FlowPaymentForm(initial={"amount_xaf": due or None, "method": flow.default_method})
+        proposed = (due + 1) // 2 if flow.default_share == "half" else due
+        form = FlowPaymentForm(
+            initial={"amount_xaf": proposed or None, "method": flow.default_method}
+        )
     paid = summary.price_total_xaf - summary.balance_xaf
     context = _layout(
         flow,
@@ -537,6 +540,7 @@ def flow_pay(request: HttpRequest, case_id: UUID) -> HttpResponse:
         schedule=flow.schedule(summary.price_total_xaf, summary.departure_date),
         payments=PaymentsService.payments_for_case(actor, case_id),
         skip_url=done_url,
+        preset=flow.default_share,
     )
     status = 422 if request.method == "POST" and form.errors else 200
     return render(request, "web/flow/pay.html", context, status=status)

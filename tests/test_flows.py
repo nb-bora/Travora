@@ -558,3 +558,150 @@ def test_the_train_agent_view_hides_cost_and_margin(agency_a: AgencyFixture) -> 
     with TenancyService.scope(agency_a.id):
         case = CasesService.list_cases(agency_a.agent)[0]
     assert case.cost_total_xaf is None
+
+
+def boat_trip(**overrides: str) -> dict[str, str]:
+    day = (timezone.localdate() + timedelta(days=45)).isoformat()
+    return {
+        "action": "next",
+        "origin": "Douala",
+        "destination": "Malabo",
+        "departure_date": day,
+        "carrier": "Compagnie maritime B",
+        "ship": "MV Équateur",
+        "check_in_opens": "08:30",
+        "check_in_closes": "10:30",
+        "boarding_time": "11:30",
+        "departure_time": "12:30",
+        "arrival_time": "19:00",
+        "passenger_price": "45000",
+        "with_vehicle": "on",
+        "vehicle_price": "110000",
+        "customer_name": "Pierre Ekani",
+        "customer_phone": "+237 677 00 11 22",
+    } | overrides
+
+
+def boat_passengers(**overrides: str) -> dict[str, str]:
+    expiry = (timezone.localdate() + timedelta(days=2000)).isoformat()
+    data = {
+        "action": "next",
+        "form-TOTAL_FORMS": "2",
+        "form-INITIAL_FORMS": "0",
+        "form-MIN_NUM_FORMS": "0",
+        "form-MAX_NUM_FORMS": "9",
+        "vehicle-plate": "lt 123 ab",
+        "vehicle-vehicle_type": "car",
+        "vehicle-length_m": "4,5",
+    }
+    people = [("EKANI/PIERRE", "P 1048827"), ("EKANI/SANDRA", "P 1048828")]
+    for index, (name, passport) in enumerate(people):
+        data[f"form-{index}-name"] = name
+        data[f"form-{index}-birth_date"] = "1985-03-14"
+        data[f"form-{index}-nationality"] = "Camerounaise"
+        data[f"form-{index}-doc_number"] = passport
+        data[f"form-{index}-doc_expiry"] = expiry
+    return data | overrides
+
+
+def boat_costs(**overrides: str) -> dict[str, str]:
+    return {
+        "action": "confirm",
+        "port_tax_xaf": "5000",
+        "agency_fee_xaf": "15000",
+        "cost_total_xaf": "200000",
+    } | overrides
+
+
+def run_boat_flow(client: Client) -> str:
+    client.get(reverse("web:flow_start", kwargs={"mode": "boat"}))
+    assert client.post(step("boat", 1), boat_trip()).status_code == 302
+    assert client.post(step("boat", 2), boat_passengers()).status_code == 302
+    response = client.post(step("boat", 3), boat_costs())
+    assert response.status_code == 302
+    return str(response["Location"])
+
+
+def test_a_complete_boat_flow_splits_the_cost_exactly_and_proposes_a_schedule(
+    agency_a: AgencyFixture,
+) -> None:
+    manager = login("alpha-manager")
+    pay_url = run_boat_flow(manager)
+
+    with TenancyService.scope(agency_a.id):
+        case = CasesService.list_cases(agency_a.manager)[0]
+        detail = CasesService.get_case(agency_a.manager, case.id)
+    assert case.price_total_xaf == 2 * 50_000 + 110_000 + 15_000
+    assert case.cost_total_xaf == 200_000  # aucun franc perdu dans la répartition
+    assert case.recognized_margin_xaf == case.price_total_xaf - 200_000
+    first = detail.lines[0]
+    assert first.details["doc_number"] == "P1048827"
+    assert first.details["vehicle_plate"] == "LT 123 AB"
+    assert first.details["cabin"] == "deck"
+
+    page = manager.get(pay_url).content.decode()
+    assert "Échéancier proposé" in page
+    assert "7 jours avant le départ" in page
+    assert 'data-preset="half" checked' in page
+
+    paid = manager.post(
+        pay_url,
+        {
+            "action": "pay",
+            "method": "transfer",
+            "amount_xaf": "137500",
+            "received_on": str(timezone.localdate()),
+            "reference": "VIR-0418",
+            "idempotency_key": "boat1",
+        },
+    )
+    done = manager.get(paid["Location"]).content.decode()
+    assert "Convocation" in done
+    assert "11:30" in done
+    assert "MV Équateur" in done
+    assert "Papiers du véhicule" in done
+    assert "LT 123 AB" in done
+    assert "Solde restant" in done
+
+
+def test_boat_validation_and_passport_warning(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.get(reverse("web:flow_start", kwargs={"mode": "boat"}))
+    no_price = client.post(step("boat", 1), boat_trip(vehicle_price="0"))
+    assert "Indiquez le prix du véhicule" in no_price.content.decode()
+    inverted = client.post(
+        step("boat", 1), boat_trip(check_in_opens="11:00", check_in_closes="10:00")
+    )
+    assert "doit suivre l" in inverted.content.decode()
+
+    client.post(step("boat", 1), boat_trip(with_vehicle=""))
+    future_birth = client.post(
+        step("boat", 2), boat_passengers(**{"form-0-birth_date": "2999-01-01"})
+    )
+    assert "dans le futur" in future_birth.content.decode()
+    soon = (timezone.localdate() + timedelta(days=90)).isoformat()
+    client.post(step("boat", 2), boat_passengers(**{"form-1-doc_expiry": soon}))
+    third = client.get(step("boat", 3)).content.decode()
+    assert "Validité des passeports" in third
+    assert "EKANI/SANDRA" in third  # signalé, sans bloquer la vente
+    assert client.post(step("boat", 3), boat_costs()).status_code == 302
+
+
+def test_a_boat_without_a_vehicle_has_no_vehicle_form(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.get(reverse("web:flow_start", kwargs={"mode": "boat"}))
+    client.post(step("boat", 1), boat_trip(with_vehicle="", vehicle_price=""))
+    page = client.get(step("boat", 2)).content.decode()
+    assert "vehicle-plate" not in page
+    data = boat_passengers()
+    for key in ("vehicle-plate", "vehicle-vehicle_type", "vehicle-length_m"):
+        del data[key]
+    assert client.post(step("boat", 2), data).status_code == 302
+
+
+def test_the_cost_split_never_loses_a_franc() -> None:
+    from apps.web.flows.base import allocate
+
+    for total in (0, 1, 7, 200_000, 199_999):
+        for weights in ([50_000, 50_000, 110_000], [1, 1, 1], [0, 0], [3]):
+            assert sum(allocate(total, weights)) == total
