@@ -1,0 +1,20 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block flow_body %}
+<section class="card" aria-labelledby="p-t">
+  <div class="section-row"><h2 id="p-t">Passagers</h2><span class="muted">Une pièce d'identité par passager</span></div>
+  {% include "web/flow/_travellers.html" with mode_word_article="un passager" wide_fields="name" fields_class="tf-boat" %}
+  <p class="field-hint">Certains pays exigent un passeport valable plusieurs mois après le départ : Travora le signale à l'étape suivante, sans bloquer.</p>
+</section>
+
+{% if vehicle_form %}
+<section class="card" aria-labelledby="v-t">
+  <div class="section-row"><h2 id="v-t">Véhicule</h2><span class="badge badge-info">1 véhicule</span></div>
+  <div class="grid-3">
+    {% include "web/_field.html" with field=vehicle_form.plate %}
+    {% include "web/_field.html" with field=vehicle_form.vehicle_type %}
+    {% include "web/_field.html" with field=vehicle_form.length_m %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

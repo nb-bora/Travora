@@ -49,6 +49,7 @@ class FlowDef:
     pricing_step: ClassVar[int] = 3  # 2 pour l'avion : le tarif se saisit avec les passagers
     template_prefix: ClassVar[str]
     default_method: ClassVar[str] = "mobile_money"
+    default_share: ClassVar[str] = "all"  # « all » ou « half » : part proposée à l'encaissement
 
     # --- lecture du brouillon -------------------------------------------------------------
     @staticmethod

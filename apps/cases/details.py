@@ -49,6 +49,7 @@ ALLOWED: dict[LineKind, dict[str, type]] = {
         "ship": str,
         "check_in_opens": str,
         "check_in_closes": str,
+        "boarding_time": str,
         "doc_type": str,
         "doc_number": str,
         "birth_date": str,

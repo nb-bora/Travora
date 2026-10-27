@@ -1,0 +1,27 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block cta_action %}confirm{% endblock %}
+{% block default_action %}confirm{% endblock %}
+{% block total_attrs %} data-terms="{{ live_total }}"{% endblock %}
+{% block flow_body %}
+{% include "web/flow/_price_table.html" with live_total=live_total %}
+
+<section class="card" aria-labelledby="cost-t">
+  <h2 id="cost-t" class="card-title">Frais et coût d'achat</h2>
+  <div class="grid-3 cost-row">
+    {% include "web/_field.html" with field=pricing_form.port_tax_xaf %}
+    {% include "web/_field.html" with field=pricing_form.agency_fee_xaf hint="Facultatif" %}
+    {% include "web/_field.html" with field=pricing_form.cost_total_xaf hint="Saisissable par tous, lisible par le gérant seulement" %}
+  </div>
+  {% if is_manager %}
+  <div class="callout callout-row">
+    <div><span class="muted">Marge prévue (gérant)</span><strong data-terms="{{ live_total }} - id_cost_total_xaf"></strong></div>
+  </div>
+  {% endif %}
+</section>
+
+{% include "web/flow/_checks.html" with title="Avant de confirmer la vente" %}
+{% if specs %}{% include "web/flow/_ledger.html" %}{% else %}
+<p class="field-hint">La vente est enregistrée au compte du client et ne se modifie plus. Une erreur se corrige par une annulation.</p>
+{% endif %}
+{% endblock %}
