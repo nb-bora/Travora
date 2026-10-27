@@ -95,3 +95,22 @@ def test_a_successful_request_keeps_its_writes(agency_a: AgencyFixture) -> None:
 
     with TenancyService.scope(agency_a.id):
         assert AuditEvent.objects.filter(action="kept").exists()
+
+
+def test_a_suspended_agency_gets_no_actor_in_the_middleware(agency_a: AgencyFixture) -> None:
+    TenancyService.set_agency_active(user_id=agency_a.manager.user_id, active=False)
+    seen: dict[str, object] = {}
+
+    def view(request: HttpRequest) -> HttpResponse:
+        seen["actor"] = request.actor  # type: ignore[attr-defined]
+        seen["agency"] = current_agency_id()
+        return HttpResponse("ok")
+
+    request = build_request(User.objects.get(id=agency_a.agent.user_id))
+    TenantMiddleware(view)(request)
+
+    assert seen == {"actor": None, "agency": None}
+    event = None
+    with TenancyService.scope(agency_a.id):
+        event = AuditEvent.objects.filter(action="agency.suspended").first()
+    assert event is not None

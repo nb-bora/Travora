@@ -19,6 +19,10 @@ class TenancyService:
         return commands.agency_info(actor)
 
     @staticmethod
+    def set_agency_active(*, user_id: UUID, active: bool) -> AgencyInfo | None:
+        return commands.set_agency_active(user_id=user_id, active=active)
+
+    @staticmethod
     def scope(agency_id: UUID, user_id: UUID | None = None) -> AbstractContextManager[None]:
         return tenant_scope(agency_id, user_id)
 
