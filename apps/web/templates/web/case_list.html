@@ -7,7 +7,7 @@
     <h1>Dossiers</h1>
     <p class="muted">{{ total_open }} dossier{{ total_open|pluralize }} ouvert{{ total_open|pluralize }}{% if attention %} · {{ attention }} avec un solde dû{% endif %}</p>
   </div>
-  <a class="btn btn-primary" href="{% url 'web:case_create' %}">
+  <a class="btn btn-primary" href="{% url 'web:flow_chooser' %}">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
     Nouveau dossier</a>
 </header>

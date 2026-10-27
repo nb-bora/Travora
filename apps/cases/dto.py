@@ -1,5 +1,7 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from apps.cases.constants import CaseStatus, LineKind
@@ -15,6 +17,7 @@ class CaseLineView:
     passenger_name: str
     ticket_number: str
     carrier: str
+    details: Mapping[str, Any]
     price_xaf: int
     cost_xaf: int | None
     margin_xaf: int | None
@@ -60,6 +63,8 @@ class TicketProposal:
     origin: str
     destination: str
     departure_date: date | None
+    departure_time: str
+    arrival_time: str
     carrier: str
     booking_reference: str
     price_xaf: int | None

@@ -1,0 +1,18 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block cta_action %}confirm{% endblock %}
+{% block default_action %}confirm{% endblock %}
+{% block flow_body %}
+{% if ttl %}
+<div class="deadline{% if ttl.late %} deadline-late{% endif %}" role="status">
+  <div class="deadline-row"><strong>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    {{ ttl.title }}</strong><span>{{ ttl.left }}</span></div>
+  <progress class="meter" value="{{ ttl.percent }}" max="100" aria-label="Temps restant avant la fin du délai"></progress>
+  {% if booking_reference %}<p class="flush">Après cette date, la compagnie peut annuler la réservation {{ booking_reference }}.</p>{% endif %}
+</div>
+{% endif %}
+
+{% include "web/flow/_checks.html" with title="Avant d'émettre" %}
+{% include "web/flow/_ledger.html" %}
+{% endblock %}

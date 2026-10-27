@@ -1,0 +1,34 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block total_attrs %} data-terms="{% if pricing_form %}id_pricing-fare_base_xaf*{{ formset.total_form_count }} + id_pricing-taxes_xaf*{{ formset.total_form_count }} + id_pricing-agency_fee_xaf*{{ formset.total_form_count }}{% endif %}"{% endblock %}
+{% block flow_body %}
+<section class="card" aria-labelledby="pax-t">
+  <div class="section-row"><h2 id="pax-t">Passagers</h2></div>
+  {% include "web/flow/_travellers.html" with mode_word_article="un passager" wide_fields="name" %}
+  <p class="field-hint">Écrivez le nom comme sur la pièce d'identité : NOM/PRÉNOM et civilité.</p>
+</section>
+
+<section class="card" aria-labelledby="fare-t">
+  <h2 id="fare-t" class="card-title">Tarif par passager</h2>
+  <div class="grid-3">
+    {% include "web/_field.html" with field=pricing_form.fare_base_xaf %}
+    {% include "web/_field.html" with field=pricing_form.taxes_xaf %}
+    {% include "web/_field.html" with field=pricing_form.agency_fee_xaf %}
+  </div>
+  <p class="price-line">Prix client par passager <strong data-terms="id_pricing-fare_base_xaf + id_pricing-taxes_xaf + id_pricing-agency_fee_xaf"></strong></p>
+</section>
+
+<section class="card" aria-labelledby="cost-t">
+  <h2 id="cost-t" class="card-title">Coût d'achat</h2>
+  <p class="muted flush">Prix payé au fournisseur. Vous pouvez le saisir ; seul le gérant le relit.</p>
+  <div class="grid-2 cost-row">
+    {% include "web/_field.html" with field=pricing_form.cost_xaf %}
+    {% if is_manager %}
+    <div class="callout"><span class="muted">Marge prévue (gérant)</span>
+      <strong data-terms="id_pricing-fare_base_xaf*{{ formset.total_form_count }} + id_pricing-taxes_xaf*{{ formset.total_form_count }} + id_pricing-agency_fee_xaf*{{ formset.total_form_count }} - id_pricing-cost_xaf*{{ formset.total_form_count }}"></strong></div>
+    {% else %}
+    <div class="callout callout-dashed"><span class="muted">Le coût est enregistré. Il reste visible du gérant seulement.</span></div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

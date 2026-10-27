@@ -1,0 +1,54 @@
+{% extends "web/base.html" %}
+{% load static web_extras %}
+{% block title %}{{ title }} · Travora{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'web/flow.css' %}?v=1">{% endblock %}
+{% block shell %}
+<div class="flow">
+  <header class="flow-head">
+    <a class="flow-close" href="{{ close_url }}" aria-label="Fermer le parcours">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </a>
+    <span class="flow-mode" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ flow.kind|kind_icon }}"/></svg>
+    </span>
+    <div class="flow-titles"><strong>{{ title }}</strong><span>{{ subtitle }}</span></div>
+    <span class="badge badge-neutral">Étape {{ step }} sur 5</span>
+  </header>
+
+  <ol class="stepper" aria-label="Étapes du parcours">
+    {% for s in steps %}
+    <li class="step step-{{ s.state }}"{% if s.state == "current" %} aria-current="step"{% endif %}>
+      <span class="step-dot">{% if s.state == "done" %}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><span class="sr-only">Terminée : </span>{% else %}{{ s.n }}{% endif %}</span>
+      <span class="step-label">{{ s.label }}</span>
+      {% if not s.last %}<span class="step-line" aria-hidden="true"></span>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+
+  {% block form_open %}<form method="post" class="flow-form" id="flow-form" novalidate>
+    {% csrf_token %}
+    <button type="submit" name="action" value="{% block default_action %}next{% endblock %}" class="sr-only" tabindex="-1" aria-hidden="true">Continuer</button>{% endblock %}
+    <main id="main" class="flow-main">
+      {% if messages %}
+      <div class="messages" role="status" aria-live="polite">
+        {% for message in messages %}
+          <p class="alert {% if message.level_tag == 'error' %}alert-danger{% else %}alert-success{% endif %}">{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block flow_body %}{% endblock %}
+    </main>
+    {% block foot %}
+    <footer class="flow-foot">
+      <a class="btn btn-ghost" href="{{ back_url }}">{% block back_label %}Retour{% endblock %}</a>
+      <div class="flow-total">
+        {% if footer_label %}<span>{{ footer_label }}</span>{% endif %}
+        <strong{% block total_attrs %}{% endblock %}>{% if footer_total is not None %}{{ footer_total|xaf }}{% endif %}</strong>
+      </div>
+      <button class="btn btn-primary btn-lg" type="submit" name="action" value="{% block cta_action %}next{% endblock %}">{{ cta }}</button>
+    </footer>
+    {% endblock %}
+  {% block form_close %}</form>{% endblock %}
+</div>
+<script src="{% static 'web/flow.js' %}?v=1" defer></script>
+{% endblock %}

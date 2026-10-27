@@ -30,3 +30,23 @@ KIND_ICONS = {
 def kind_icon(kind: object) -> str:
     """Tracé SVG (viewBox 24) de l'icône d'un type de ligne."""
     return KIND_ICONS.get(getattr(kind, "value", str(kind)), KIND_ICONS["free_service"])
+
+
+METHOD_ICONS = {
+    "cash": "M2 7h20v10H2zM12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM6 12h.01M18 12h.01",
+    "mobile_money": "M8 2h8a1 1 0 011 1v18a1 1 0 01-1 1H8a1 1 0 01-1-1V3a1 1 0 011-1zM11 18h2",
+    "transfer": "M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18",
+}
+
+
+@register.filter
+def method_icon(method: object) -> str:
+    """Tracé SVG (viewBox 24) de l'icône d'un mode de paiement."""
+    return METHOD_ICONS.get(str(method), METHOD_ICONS["cash"])
+
+
+@register.filter
+def first_word(value: str) -> str:
+    """Prénom approximatif pour « Message pour Marie »."""
+    parts = str(value).split()
+    return parts[0] if parts else ""

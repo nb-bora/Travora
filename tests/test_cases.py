@@ -434,3 +434,75 @@ def test_references_keep_only_ascii_characters(scoped: AgencyFixture) -> None:
 def test_an_overlong_reference_is_refused_not_a_server_error(scoped: AgencyFixture) -> None:
     with pytest.raises(InvalidLine):
         air_line(scoped, new_case(scoped), ticket_number="1" * 40)
+
+
+def line_with_details(agency: AgencyFixture, case_id: UUID, kind: LineKind, **details):
+    return CasesService.add_line(
+        agency.agent,
+        case_id=case_id,
+        kind=kind,
+        label="Trajet",
+        price_xaf=1_000,
+        cost_xaf=800,
+        details=details,
+    )
+
+
+def test_mode_details_are_stored_and_read_back_by_the_manager(scoped: AgencyFixture) -> None:
+    case_id = new_case(scoped)
+    line_with_details(
+        scoped,
+        case_id,
+        LineKind.BUS_TICKET,
+        station="Agence centre",
+        seat="12",
+        bags=2,
+        departure_time="08:00",
+    )
+    detail = CasesService.get_case(scoped.manager, case_id)
+    assert detail.lines[0].details == {
+        "station": "Agence centre",
+        "seat": "12",
+        "bags": 2,
+        "departure_time": "08:00",
+    }
+
+
+def test_an_agent_never_reads_the_financial_details(scoped: AgencyFixture) -> None:
+    case_id = new_case(scoped)
+    line_with_details(
+        scoped,
+        case_id,
+        LineKind.AIR_TICKET,
+        fare_base_xaf=375_000,
+        taxes_xaf=95_000,
+        booking_reference="K7QX2B",
+    )
+    as_agent = CasesService.get_case(scoped.agent, case_id).lines[0].details
+    as_manager = CasesService.get_case(scoped.manager, case_id).lines[0].details
+
+    assert as_agent == {"booking_reference": "K7QX2B"}
+    assert as_manager["fare_base_xaf"] == 375_000
+    assert as_manager["taxes_xaf"] == 95_000
+
+
+def test_details_are_a_closed_list_of_short_texts_and_integers(scoped: AgencyFixture) -> None:
+    case_id = new_case(scoped)
+    for kind, bad in (
+        (LineKind.BUS_TICKET, {"cvv": "123"}),  # clé inconnue
+        (LineKind.BUS_TICKET, {"seat": 12}),  # type
+        (LineKind.BUS_TICKET, {"bags": -1}),  # entier négatif
+        (LineKind.BUS_TICKET, {"bags": True}),  # booléen déguisé
+        (LineKind.BUS_TICKET, {"station": "x" * 200}),  # trop long
+        (LineKind.BUS_TICKET, {"seat": {"a": 1}}),  # structure libre
+        (LineKind.FREE_SERVICE, {"seat": "1"}),  # une prestation n'a pas de détails
+        (LineKind.BUS_TICKET, {"fare_base_xaf": 1}),  # clé d'un autre mode
+    ):
+        with pytest.raises(InvalidLine):
+            line_with_details(scoped, case_id, kind, **bad)
+
+
+def test_empty_details_are_dropped(scoped: AgencyFixture) -> None:
+    case_id = new_case(scoped)
+    line_with_details(scoped, case_id, LineKind.TRAIN_TICKET, car="3", seat="", train="  ")
+    assert CasesService.get_case(scoped.manager, case_id).lines[0].details == {"car": "3"}

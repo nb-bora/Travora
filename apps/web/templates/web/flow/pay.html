@@ -1,0 +1,92 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block default_action %}pay{% endblock %}
+{% block flow_body %}
+<section class="stat-trio" aria-label="Situation financière">
+  <div class="card"><span class="muted">Prix client</span><strong>{{ summary.price_total_xaf|xaf }}</strong></div>
+  <div class="card"><span class="muted">Déjà encaissé</span><strong>{{ paid|xaf }}</strong></div>
+  <div class="card card-dark"><span>Solde dû</span><strong>{{ due|xaf }}</strong></div>
+</section>
+
+{% if due > 0 %}
+<section class="card" aria-labelledby="pay-t">
+  <h2 id="pay-t" class="card-title">Encaisser un paiement</h2>
+  {{ form.idempotency_key }}
+  {% if form.non_field_errors %}{% for error in form.non_field_errors %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endfor %}{% endif %}
+
+  <fieldset class="methods">
+    <legend class="sr-only">Mode de paiement</legend>
+    {% for radio in form.method %}
+    <label class="method">{{ radio.tag }}<span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ radio.data.value|method_icon }}"/></svg>
+      <strong>{{ radio.choice_label }}</strong>
+      <small>{% if radio.data.value == "cash" %}Sans référence{% else %}Référence requise{% endif %}</small></span></label>
+    {% endfor %}
+  </fieldset>
+  {% for error in form.method.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+
+  <div class="presets" role="radiogroup" aria-label="Montant reçu">
+    <span class="muted">Montant reçu</span>
+    <label class="preset"><input type="radio" name="preset" data-preset="all" checked><span>Tout le solde</span></label>
+    <label class="preset"><input type="radio" name="preset" data-preset="half"><span>50 %</span></label>
+    <label class="preset"><input type="radio" name="preset" data-preset="other"><span>Autre montant</span></label>
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="id_amount_xaf">Montant (FCFA)</label>
+      <input type="number" name="amount_xaf" id="id_amount_xaf" class="money" inputmode="numeric" min="1" step="1" data-due="{{ due }}" value="{{ form.amount_xaf.value|default_if_none:'' }}">
+      {% for error in form.amount_xaf.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+      <p class="field-hint">Solde restant après : <strong id="remaining-after">{{ due|xaf }}</strong></p>
+    </div>
+    {% include "web/_field.html" with field=form.received_on hint="Pas de date future ni trop ancienne" %}
+    {% include "web/_field.html" with field=form.reference class="field-wide" hint="Obligatoire hors espèces. Une référence ne s'utilise qu'une fois dans l'agence." %}
+  </div>
+
+  <div class="cash-box" id="cash-box">
+    <div class="grid-2">
+      {% include "web/_field.html" with field=form.given_xaf hint="Pour calculer la monnaie à rendre : rien n'est enregistré" %}
+      <div class="callout"><span class="muted">Monnaie à rendre</span><strong id="change-due">0&nbsp;FCFA</strong></div>
+    </div>
+  </div>
+
+  {% if schedule %}
+  <div class="schedule">
+    <h3>Échéancier proposé</h3>
+    <ol>
+      {% for step in schedule %}
+      <li class="{{ step.state }}"><span class="dot" aria-hidden="true"></span>
+        <div><strong>{{ step.title }}</strong><div class="muted">{{ step.when }}</div></div>
+        <strong>{{ step.amount|xaf }}</strong><span class="badge badge-{{ step.tone }}">{{ step.tag }}</span></li>
+      {% endfor %}
+    </ol>
+  </div>
+  {% endif %}
+</section>
+{% else %}
+<section class="card"><p class="flush"><strong>Rien à encaisser.</strong> Le dossier est soldé.</p></section>
+{% endif %}
+
+{% if payments %}
+<section class="card" aria-labelledby="hist-t">
+  <h2 id="hist-t" class="card-title">Encaissements de ce dossier</h2>
+  <ul class="pay-list">
+    {% for payment in payments %}
+    <li{% if payment.is_voided %} class="voided"{% endif %}>
+      <div class="pay-main"><strong>{{ payment.method.label }}{% if payment.reference %} · {{ payment.reference }}{% endif %}</strong><div class="muted">{{ payment.received_on|date:"j N Y" }}</div></div>
+      <strong class="num">{{ payment.amount_xaf|xaf }}</strong>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}
+{% block foot %}
+<footer class="flow-foot">
+  <a class="btn btn-ghost" href="{{ back_url }}">Dossier</a>
+  <div class="flow-total"><span>{{ footer_label }}</span><strong>{{ footer_total|xaf }}</strong></div>
+  <button class="btn btn-ghost" type="submit" name="action" value="skip" formnovalidate>Encaisser plus tard</button>
+  {% if due > 0 %}<button class="btn btn-primary btn-lg" type="submit" name="action" value="pay">{{ cta }}</button>
+  {% else %}<button class="btn btn-primary btn-lg" type="submit" name="action" value="skip" formnovalidate>Continuer</button>{% endif %}
+</footer>
+{% endblock %}

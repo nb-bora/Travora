@@ -2,6 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from apps.web import views
+from apps.web.flows import views as flows
 
 app_name = "web"
 
@@ -16,6 +17,11 @@ urlpatterns = [
     ),
     path("deconnexion/", auth_views.LogoutView.as_view(), name="logout"),
     path("dossiers/coller/", views.paste_booking, name="paste_booking"),
+    path("nouveau/", flows.flow_chooser, name="flow_chooser"),
+    path("nouveau/<slug:mode>/", flows.flow_start, name="flow_start"),
+    path("nouveau/<slug:mode>/etape/<int:step>/", flows.flow_step, name="flow_step"),
+    path("dossiers/<uuid:case_id>/paiement/", flows.flow_pay, name="flow_pay"),
+    path("dossiers/<uuid:case_id>/remise/", flows.flow_done, name="flow_done"),
     path("dossiers/rapide/", views.quick_entry, name="quick_entry"),
     path("dossiers/", views.case_list, name="case_list"),
     path("dossiers/nouveau/", views.case_create, name="case_create"),

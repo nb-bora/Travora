@@ -1,0 +1,63 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block flow_body %}
+<div class="seg" role="tablist" aria-label="Méthode de saisie">
+  <a role="tab" href="?" aria-selected="{% if not manual %}true{% else %}false{% endif %}">Coller un billet</a>
+  <a role="tab" href="?saisie=manuelle" aria-selected="{% if manual %}true{% else %}false{% endif %}">Saisir à la main</a>
+</div>
+
+{% if not manual %}
+<section class="card" aria-labelledby="paste-t">
+  <div class="section-row"><h2 id="paste-t">Texte collé</h2><span class="muted">E-ticket, e-mail ou message du fournisseur</span></div>
+  <label for="paste-text" class="sr-only">Texte du billet</label>
+  <textarea id="paste-text" name="text" rows="5" maxlength="5000" placeholder="Collez ici le texte du billet…">{{ pasted_text }}</textarea>
+  <div class="actions"><button class="btn btn-secondary btn-sm" type="submit" name="action" value="paste" formnovalidate>Analyser le texte</button></div>
+</section>
+{% endif %}
+
+{% if proposal %}
+<section class="card recognised-card" aria-labelledby="rec-t">
+  <div class="rec-head">
+    <span class="rec-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>
+    <h2 id="rec-t">{% if proposal.recognised %}Reconnu dans le texte{% else %}Rien de reconnu{% endif %}</h2>
+    {% if proposal.recognised %}<span class="badge badge-success">{{ recognised_count }} élément{{ recognised_count|pluralize }}</span>{% endif %}
+  </div>
+  {% if proposal.recognised %}
+  <div class="rec-body">
+    <div class="timeline">
+      <div class="tl-end"><strong>{{ timeline.dep_time|default:"—" }}</strong><span class="tl-code">{{ proposal.origin|default:"?" }}</span></div>
+      <div class="tl-mid"><span class="muted">{% if timeline.duration %}{{ timeline.duration }} · {% endif %}{{ proposal.carrier|default:"transporteur à préciser" }}</span>
+        <span class="tl-line" aria-hidden="true"><i></i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ flow.kind|kind_icon }}"/></svg><i></i></span>
+        <span class="muted">{% if proposal.departure_date %}{{ proposal.departure_date|date:"j N Y" }}{% else %}date à saisir{% endif %}</span></div>
+      <div class="tl-end"><strong>{{ timeline.arr_time|default:"—" }}</strong><span class="tl-code">{{ proposal.destination|default:"?" }}</span></div>
+    </div>
+    {% for warning in proposal.warnings %}<p class="alert alert-warning">{{ warning }}</p>{% endfor %}
+  </div>
+  {% else %}
+  <div class="rec-body"><p class="alert alert-warning">Aucun billet reconnu dans ce texte. Saisissez le voyage ci-dessous.</p></div>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="trip-t">
+  <h2 id="trip-t" class="card-title">Voyage</h2>
+  <div class="grid-4">
+    {% include "web/_field.html" with field=form.origin %}
+    {% include "web/_field.html" with field=form.destination %}
+    {% include "web/_field.html" with field=form.departure_date %}
+    {% include "web/_field.html" with field=form.carrier %}
+    {% include "web/_field.html" with field=form.departure_time %}
+    {% include "web/_field.html" with field=form.arrival_time %}
+    {% include "web/_field.html" with field=form.booking_reference hint="6 caractères, donnés par la compagnie" %}
+    {% include "web/_field.html" with field=form.ticket_time_limit hint="Délai d'émission imposé par la compagnie" %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="client-t">
+  <h2 id="client-t" class="card-title">Client</h2>
+  <div class="grid-2">
+    {% include "web/_field.html" with field=form.customer_name %}
+    {% include "web/_field.html" with field=form.customer_phone hint="Retrouvé par son téléphone s'il existe déjà" %}
+  </div>
+</section>
+{% endblock %}

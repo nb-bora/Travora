@@ -1,5 +1,7 @@
 import string
+from collections.abc import Mapping
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from django.db import IntegrityError, transaction
@@ -8,6 +10,7 @@ from django.utils import timezone
 from apps.audit.services.public import AuditService
 from apps.cases import selectors
 from apps.cases.constants import TICKET_KINDS, CaseStatus, LineKind
+from apps.cases.details import clean_details
 from apps.cases.dto import CaseLineView
 from apps.cases.exceptions import (
     BalanceNotSettled,
@@ -110,6 +113,7 @@ def add_line(
     ticket_number: str,
     raw_text: str,
     carrier: str = "",
+    details: Mapping[str, Any] | None = None,
 ) -> CaseLineView:
     require_open_case(case_id)
     _validate_amounts(price_xaf, cost_xaf)
@@ -117,8 +121,10 @@ def add_line(
         raise InvalidLine("Le libellé est obligatoire.")
     number = _clean_reference(kind, ticket_number)
     _check_reference(kind, number)
+    cleaned_details = clean_details(kind, details)
     line = CaseLine.objects.create(
         carrier=carrier.strip(),
+        details=cleaned_details,
         case_id=case_id,
         kind=kind,
         label=label.strip(),

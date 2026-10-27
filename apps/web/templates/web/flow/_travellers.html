@@ -1,0 +1,29 @@
+{# Lignes de voyageurs : ajouter, retirer, sans JavaScript. #}
+{{ formset.management_form }}
+{% if missing %}<p class="alert alert-danger" role="alert">{{ missing }}</p>{% endif %}
+{% for error in formset.non_form_errors %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endfor %}
+<ul class="traveller-list">
+  {% for form in formset %}
+  <li class="traveller">
+    <span class="traveller-n" aria-hidden="true">{{ forloop.counter }}</span>
+    <div class="traveller-fields">
+      {% for field in form.visible_fields %}
+        {% if field.name == "DELETE" %}{% else %}
+        <div class="field{% if field.name in wide_fields %} field-wide{% endif %}">
+          {{ field.label_tag }}{{ field }}
+          {% for error in field.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+    {% if formset.total_form_count > 1 %}
+    <label class="remove"><input type="checkbox" name="{{ form.DELETE.html_name }}" id="{{ form.DELETE.id_for_label }}"{% if form.DELETE.value %} checked{% endif %}> Retirer</label>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+<div class="actions">
+  <button class="btn btn-secondary btn-sm" type="submit" name="action" value="add" formnovalidate>+ Ajouter {{ mode_word_article }}</button>
+  {% if formset.total_form_count > 1 %}<button class="btn btn-ghost btn-sm" type="submit" name="action" value="remove" formnovalidate>Retirer les lignes cochées</button>{% endif %}
+</div>

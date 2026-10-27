@@ -3,6 +3,7 @@ from uuid import UUID
 from django.db.models import Count, Q, Sum
 
 from apps.cases.constants import CaseStatus, LineKind
+from apps.cases.details import visible_details
 from apps.cases.dto import CaseDetail, CaseLineView, CaseSummary
 from apps.cases.exceptions import CaseNotFound, LineNotFound
 from apps.cases.models import Case, CaseLine
@@ -48,6 +49,7 @@ def line_view(line: CaseLine, *, financials: bool) -> CaseLineView:
         passenger_name=line.passenger_name,
         ticket_number=line.ticket_number,
         carrier=line.carrier,
+        details=visible_details(line.details, financials=financials),
         price_xaf=line.price_xaf,
         cost_xaf=line.cost_xaf if financials else None,
         margin_xaf=margin,

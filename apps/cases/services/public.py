@@ -4,7 +4,9 @@ Les vues renvoyées ne contiennent ni coût ni marge pour un agent : le filtrage
 côté serveur, jamais par l'interface.
 """
 
+from collections.abc import Mapping
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from apps.cases import selectors
@@ -41,6 +43,7 @@ class CasesService:
         ticket_number: str = "",
         raw_text: str = "",
         carrier: str = "",
+        details: Mapping[str, Any] | None = None,
     ) -> CaseLineView:
         return commands.add_line(
             actor,
@@ -53,6 +56,7 @@ class CasesService:
             ticket_number=ticket_number,
             raw_text=raw_text,
             carrier=carrier,
+            details=details,
         )
 
     @staticmethod
