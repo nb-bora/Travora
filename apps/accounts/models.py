@@ -24,6 +24,10 @@ class Membership(TenantScopedModel):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Résolution de l'agence d'un utilisateur avant que l'agence soit connue : la RLS
+    # n'expose alors que sa propre ligne (variable ``app.user_id``).
+    by_user = models.Manager["Membership"]()
+
     class Meta:
         db_table = "accounts_membership"
         constraints = [

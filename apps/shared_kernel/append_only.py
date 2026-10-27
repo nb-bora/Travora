@@ -1,8 +1,8 @@
-from typing import Any
+from typing import Any, ClassVar
 
 from django.db import models
 
-from apps.shared_kernel.models import TenantScopedModel
+from apps.shared_kernel.models import TenantManager, TenantScopedModel
 
 
 class AppendOnlyViolation(RuntimeError):
@@ -20,6 +20,10 @@ class AppendOnlyQuerySet(models.QuerySet[Any]):
         raise AppendOnlyViolation(f"{self.model.__name__} est en ajout seul.")
 
 
+class AppendOnlyManager(TenantManager.from_queryset(AppendOnlyQuerySet)):  # type: ignore[misc]
+    pass
+
+
 class AppendOnlyModel(TenantScopedModel):
     """Table en ajout seul : aucune ligne n'est jamais modifiée ni supprimée.
 
@@ -27,7 +31,7 @@ class AppendOnlyModel(TenantScopedModel):
     d'exécution et déclencheurs, voir ``apps.shared_kernel.rls.append_only_guard``).
     """
 
-    objects = AppendOnlyQuerySet.as_manager()
+    objects: ClassVar[AppendOnlyManager] = AppendOnlyManager()
 
     class Meta:
         abstract = True

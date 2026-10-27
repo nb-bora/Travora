@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from typing import Any, ClassVar
 
 from django.db import models
 
@@ -7,7 +7,18 @@ from apps.shared_kernel.tenant_context import (
     TenantContextMissing,
     TenantMismatch,
     current_agency_id,
+    require_agency_id,
 )
+
+
+class TenantManager(models.Manager[Any]):
+    """Restreint toute requête à l'agence courante, en plus de la RLS.
+
+    Sans agence dans le contexte, la requête lève au lieu de renvoyer zéro ligne.
+    """
+
+    def get_queryset(self) -> models.QuerySet[Any]:
+        return super().get_queryset().filter(agency_id=require_agency_id())
 
 
 class TenantScopedModel(models.Model):
@@ -17,6 +28,8 @@ class TenantScopedModel(models.Model):
     agency = models.ForeignKey(
         "tenancy.Agency", on_delete=models.PROTECT, editable=False, related_name="+"
     )
+
+    objects: ClassVar[TenantManager] = TenantManager()
 
     class Meta:
         abstract = True

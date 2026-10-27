@@ -123,7 +123,7 @@ def test_membership_is_readable_through_the_user_context_for_its_owner_only(
     agency_a: AgencyFixture, agency_b: AgencyFixture
 ) -> None:
     with runtime_role(), user_scope(agency_a.manager.user_id):
-        memberships = list(Membership.objects.all())
+        memberships = list(Membership.by_user.all())
     assert [m.user_id for m in memberships] == [agency_a.manager.user_id]
 
 
