@@ -13,13 +13,23 @@
     <nav class="sidebar" aria-label="Navigation principale">
       <a class="brand" href="{% url 'web:today' %}">Travora</a>
       <ul>
-        <li><a href="{% url 'web:today' %}" aria-current="page">Aujourd'hui</a></li>
+        <li><a href="{% url 'web:today' %}"{% if request.resolver_match.url_name == 'today' %} aria-current="page"{% endif %}>Aujourd'hui</a></li>
+        <li><a href="{% url 'web:case_list' %}"{% if request.resolver_match.url_name|slice:':4' == 'case' %} aria-current="page"{% endif %}>Dossiers</a></li>
       </ul>
       <form method="post" action="{% url 'web:logout' %}" class="logout">
         {% csrf_token %}<button class="btn btn-ghost" type="submit">Se déconnecter</button>
       </form>
     </nav>
-    <main id="main" class="main">{% block content %}{% endblock %}</main>
+    <main id="main" class="main">
+      {% if messages %}
+      <div class="messages" role="status" aria-live="polite">
+        {% for message in messages %}
+          <p class="alert {% if message.level_tag == 'error' %}alert-danger{% else %}alert-success{% endif %}">{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
   </div>
   {% endblock %}
 </body>

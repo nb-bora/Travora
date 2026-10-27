@@ -15,4 +15,21 @@ urlpatterns = [
         name="login",
     ),
     path("deconnexion/", auth_views.LogoutView.as_view(), name="logout"),
+    path("dossiers/", views.case_list, name="case_list"),
+    path("dossiers/nouveau/", views.case_create, name="case_create"),
+    path("dossiers/<uuid:case_id>/", views.case_detail, name="case_detail"),
+    path("dossiers/<uuid:case_id>/lignes/", views.line_add, name="line_add"),
+    path(
+        "dossiers/<uuid:case_id>/lignes/<uuid:line_id>/emettre/",
+        views.line_issue,
+        name="line_issue",
+    ),
+    path(
+        "dossiers/<uuid:case_id>/lignes/<uuid:line_id>/annuler/",
+        views.line_void,
+        name="line_void",
+    ),
+    path("dossiers/<uuid:case_id>/encaissements/", views.payment_add, name="payment_add"),
+    path("dossiers/<uuid:case_id>/clore/", views.case_close, name="case_close"),
+    path("dossiers/<uuid:case_id>/rouvrir/", views.case_reopen, name="case_reopen"),
 ]

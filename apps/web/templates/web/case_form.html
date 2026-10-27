@@ -1,0 +1,13 @@
+{% extends "web/base.html" %}
+{% block title %}Nouveau dossier · Travora{% endblock %}
+{% block content %}
+<header class="page-head"><h1>Nouveau dossier</h1></header>
+<form method="post" class="card form">
+  {% csrf_token %}
+  {% include "web/_form_fields.html" with form=form %}
+  <div class="actions">
+    <button class="btn btn-primary" type="submit">Créer le dossier</button>
+    <a class="btn btn-secondary" href="{% url 'web:case_list' %}">Annuler</a>
+  </div>
+</form>
+{% endblock %}
