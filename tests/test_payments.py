@@ -179,3 +179,19 @@ def test_a_payment_needs_an_existing_case_of_the_agency(
         with pytest.raises(CaseNotFound):
             pay(agency_a, foreign_case, 1_000, "k")
         assert PaymentsService.payments_for_case(agency_a.agent, foreign_case) == []
+
+
+def test_a_closed_case_cannot_be_made_inconsistent_by_voiding_a_payment(
+    scoped: AgencyFixture,
+) -> None:
+    case_id = issued_case(scoped)
+    payment = pay(scoped, case_id, 500_000, "k1")
+    CasesService.close_case(scoped.agent, case_id=case_id)
+
+    with pytest.raises(CaseNotOpen):
+        PaymentsService.void_payment(scoped.manager, payment_id=payment.id, voided_on=TODAY)
+    assert balance(scoped, case_id) == 0
+
+    CasesService.reopen_case(scoped.manager, case_id=case_id)
+    PaymentsService.void_payment(scoped.manager, payment_id=payment.id, voided_on=TODAY)
+    assert balance(scoped, case_id) == 500_000

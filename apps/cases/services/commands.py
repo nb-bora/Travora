@@ -11,6 +11,7 @@ from apps.cases.dto import CaseLineView
 from apps.cases.exceptions import (
     BalanceNotSettled,
     CaseHasActiveSales,
+    CaseNotClosed,
     CaseNotOpen,
     InvalidLine,
     LineLocked,
@@ -190,6 +191,7 @@ def issue_line(actor: Actor, *, line_id: UUID, issued_on: date) -> CaseLineView:
 def void_line(actor: Actor, *, line_id: UUID, voided_on: date) -> CaseLineView:
     actor.require_manager()
     line = selectors.get_line(line_id)
+    require_open_case(line.case_id)
     if line.voided_at is not None:
         raise LineLocked("Cette ligne est déjà annulée.")
     if line.sale_transaction_id is not None:
@@ -216,6 +218,23 @@ def close_case(actor: Actor, *, case_id: UUID) -> None:
     AuditService.record(
         actor_user_id=actor.user_id,
         action="case.closed",
+        object_type="case",
+        object_id=case.id,
+        metadata={"reference": case.reference},
+    )
+
+
+def reopen_case(actor: Actor, *, case_id: UUID) -> None:
+    """Rouvre un dossier clos pour corriger une erreur ; seul un dossier clos se rouvre."""
+    actor.require_manager()
+    case = selectors.get_case(case_id)
+    if case.status != CaseStatus.CLOSED:
+        raise CaseNotClosed(case.reference)
+    case.status = CaseStatus.OPEN
+    case.save()
+    AuditService.record(
+        actor_user_id=actor.user_id,
+        action="case.reopened",
         object_type="case",
         object_id=case.id,
         metadata={"reference": case.reference},

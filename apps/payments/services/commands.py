@@ -99,6 +99,7 @@ def record_payment(
 def void_payment(actor: Actor, *, payment_id: UUID, voided_on: date) -> PaymentView:
     actor.require_manager()
     payment = selectors.get_payment(payment_id)
+    CasesService.require_open_case(actor, payment.case_id)
     if payment.voided_at is not None or payment.ledger_transaction_id is None:
         raise PaymentAlreadyVoided(str(payment_id))
     LedgerService.reverse(
