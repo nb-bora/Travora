@@ -1,10 +1,14 @@
+from datetime import date
 from io import StringIO
 from pathlib import Path
 
 import pytest
 from django.core.management import CommandError, call_command
+from django.utils import timezone
 
+from apps.cases.services.public import CasesService
 from apps.concierge.access import actor_for
+from apps.payments.services.public import PaymentsService
 from apps.shared_kernel.money import format_xaf
 from apps.shared_kernel.roles import Role
 from tests.conftest import PASSWORD
@@ -143,3 +147,16 @@ def test_local_numbers_need_an_explicit_country_code(agency: str, tmp_path: Path
         "+237",
     )
     assert "2026-0009" in run("show_balances", "--as", agency)
+
+
+def test_the_default_sale_date_is_today_in_the_agency_timezone(
+    agency: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(timezone, "localdate", lambda: date(2030, 1, 2))
+    run("import_cases", "--as", agency, "--file", write_csv(tmp_path), "--commit")
+
+    with actor_for(agency) as actor:
+        case_id = CasesService.find_case_id_by_reference(actor, "2026-0001")
+        assert case_id is not None
+        received = {p.received_on for p in PaymentsService.payments_for_case(actor, case_id)}
+        assert received == {date(2030, 1, 2)}

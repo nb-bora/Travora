@@ -5,6 +5,7 @@ from typing import Any
 from django.core.exceptions import PermissionDenied
 from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.db import transaction
+from django.utils import timezone
 
 from apps.concierge.access import actor_for
 from apps.concierge.csv_import import COLUMNS, CsvFormatError, import_cases
@@ -22,8 +23,8 @@ class Command(BaseCommand):
         parser.add_argument("--commit", action="store_true", help="Enregistrer pour de bon")
         parser.add_argument(
             "--sale-date",
-            default=date.today().isoformat(),
-            help="Date de vente et d'encaissement des lignes importées (AAAA-MM-JJ)",
+            default=None,
+            help="Date de vente et d'encaissement (AAAA-MM-JJ) ; par défaut, aujourd'hui à Douala",
         )
         parser.add_argument(
             "--default-country-code",
@@ -33,7 +34,8 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> None:
         try:
-            sale_date = date.fromisoformat(options["sale_date"])
+            raw_date = options["sale_date"]
+            sale_date = date.fromisoformat(raw_date) if raw_date else timezone.localdate()
         except ValueError as error:
             raise CommandError("--sale-date doit être au format AAAA-MM-JJ.") from error
 
