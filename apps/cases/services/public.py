@@ -87,6 +87,10 @@ class CasesService:
         commands.close_case(actor, case_id=case_id)
 
     @staticmethod
+    def reopen_case(actor: Actor, *, case_id: UUID) -> None:
+        commands.reopen_case(actor, case_id=case_id)
+
+    @staticmethod
     def cancel_case(actor: Actor, *, case_id: UUID, cancelled_on: date) -> None:
         commands.cancel_case(actor, case_id=case_id, cancelled_on=cancelled_on)
 

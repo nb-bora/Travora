@@ -14,6 +14,10 @@ class CaseNotOpen(CaseError):
     pass
 
 
+class CaseNotClosed(CaseError):
+    pass
+
+
 class InvalidLine(CaseError):
     pass
 

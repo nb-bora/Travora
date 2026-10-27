@@ -11,6 +11,7 @@ from apps.cases.constants import CaseStatus, LineKind
 from apps.cases.exceptions import (
     BalanceNotSettled,
     CaseHasActiveSales,
+    CaseNotClosed,
     CaseNotFound,
     CaseNotOpen,
     InvalidLine,
@@ -263,3 +264,54 @@ def test_sensitive_actions_are_audited(scoped: AgencyFixture) -> None:
     assert [event.action for event in events] == ["line.added", "line.issued", "line.voided"]
     with pytest.raises(PermissionDenied):
         AuditService.events_for_object(scoped.agent, "case_line", line.id)
+
+
+def closed_paid_case(agency: AgencyFixture) -> tuple[UUID, UUID]:
+    case_id = new_case(agency)
+    line = air_line(agency, case_id)
+    CasesService.issue_line(agency.agent, line_id=line.id, issued_on=TODAY)
+    LedgerService.record_payment(
+        agency.agent,
+        case_id=case_id,
+        account=Account.CASH,
+        amount_xaf=500_000,
+        occurred_on=TODAY,
+        idempotency_key="p",
+    )
+    CasesService.close_case(agency.agent, case_id=case_id)
+    return case_id, line.id
+
+
+def test_a_closed_case_cannot_be_made_inconsistent_by_voiding_a_line(
+    scoped: AgencyFixture,
+) -> None:
+    case_id, line_id = closed_paid_case(scoped)
+    with pytest.raises(CaseNotOpen):
+        CasesService.void_line(scoped.manager, line_id=line_id, voided_on=TODAY)
+    summary = CasesService.get_case(scoped.manager, case_id).summary
+    assert (summary.status, summary.balance_xaf) == (CaseStatus.CLOSED, 0)
+
+
+def test_only_a_manager_reopens_a_closed_case_and_it_is_audited(scoped: AgencyFixture) -> None:
+    case_id, line_id = closed_paid_case(scoped)
+    with pytest.raises(PermissionDenied):
+        CasesService.reopen_case(scoped.agent, case_id=case_id)
+
+    CasesService.reopen_case(scoped.manager, case_id=case_id)
+    CasesService.void_line(scoped.manager, line_id=line_id, voided_on=TODAY)
+
+    summary = CasesService.get_case(scoped.manager, case_id).summary
+    assert summary.status is CaseStatus.OPEN
+    assert summary.balance_xaf == -500_000
+    actions = [e.action for e in AuditService.events_for_object(scoped.manager, "case", case_id)]
+    assert actions == ["case.created", "case.closed", "case.reopened"]
+
+
+def test_only_a_closed_case_can_be_reopened(scoped: AgencyFixture) -> None:
+    open_case = new_case(scoped)
+    with pytest.raises(CaseNotClosed):
+        CasesService.reopen_case(scoped.manager, case_id=open_case)
+    cancelled = new_case(scoped, name="Annulé")
+    CasesService.cancel_case(scoped.manager, case_id=cancelled, cancelled_on=TODAY)
+    with pytest.raises(CaseNotClosed):
+        CasesService.reopen_case(scoped.manager, case_id=cancelled)
