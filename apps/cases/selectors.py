@@ -20,6 +20,10 @@ def get_case(case_id: UUID) -> Case:
     return case
 
 
+def find_case_id_by_reference(reference: str) -> UUID | None:
+    return Case.objects.filter(reference=reference).values_list("id", flat=True).first()
+
+
 def get_line(line_id: UUID) -> CaseLine:
     line = CaseLine.objects.filter(id=line_id).select_related("case").first()
     if line is None:

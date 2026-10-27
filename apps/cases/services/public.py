@@ -103,5 +103,9 @@ class CasesService:
         return selectors.summaries(actor, status=status)
 
     @staticmethod
+    def find_case_id_by_reference(actor: Actor, reference: str) -> UUID | None:
+        return selectors.find_case_id_by_reference(reference)
+
+    @staticmethod
     def propose_ticket_numbers(text: str) -> list[str]:
         return extract_ticket_numbers(text)
