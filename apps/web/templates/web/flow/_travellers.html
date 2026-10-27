@@ -6,7 +6,7 @@
   {% for form in formset %}
   <li class="traveller">
     <span class="traveller-n" aria-hidden="true">{{ forloop.counter }}</span>
-    <div class="traveller-fields">
+    <div class="traveller-fields {{ fields_class }}">
       {% for field in form.visible_fields %}
         {% if field.name == "DELETE" %}{% else %}
         <div class="field{% if field.name in wide_fields %} field-wide{% endif %}">

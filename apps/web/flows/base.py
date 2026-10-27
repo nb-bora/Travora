@@ -95,6 +95,17 @@ class FlowDef:
     def pricing_kwargs(self, draft: dict[str, Any]) -> dict[str, Any]:
         return {}
 
+    def default_travellers(self, draft: dict[str, Any]) -> list[dict[str, Any]]:
+        return [{}]
+
+    def aside(self, formset: Any) -> dict[str, Any]:
+        """Contexte supplémentaire de l'étape des voyageurs (plan du car…)."""
+        return {}
+
+    def price_lines(self, draft: dict[str, Any]) -> list[dict[str, Any]]:
+        """Détail du prix client (désignation, quantité, unitaire, total)."""
+        return []
+
     def confirm_label(self, draft: dict[str, Any]) -> str:
         return "Confirmer la vente"
 

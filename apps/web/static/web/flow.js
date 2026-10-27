@@ -75,6 +75,28 @@
     updatePayment();
   }
 
+  // Plan du car : les places saisies s'allument en direct.
+  var map = document.querySelector(".seat-map");
+  if (map) {
+    var counter = document.getElementById("seat-count");
+    var paint = function () {
+      var chosen = {};
+      Array.prototype.forEach.call(document.querySelectorAll("input[name$='-seat']"), function (input) {
+        var value = input.value.trim();
+        if (value) chosen[String(parseInt(value, 10))] = true;
+      });
+      Array.prototype.forEach.call(map.querySelectorAll(".seat"), function (cell) {
+        cell.classList.toggle("seat-chosen", chosen[cell.textContent.trim()] === true);
+      });
+      if (counter) {
+        var total = counter.getAttribute("data-total");
+        counter.textContent = Object.keys(chosen).length + " sur " + total + " place" + (total > 1 ? "s" : "");
+      }
+    };
+    document.addEventListener("input", paint);
+    paint();
+  }
+
   // Copier le message de remise, imprimer.
   Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (button) {
     button.addEventListener("click", function () {

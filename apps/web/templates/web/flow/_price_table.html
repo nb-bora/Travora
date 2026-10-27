@@ -1,0 +1,15 @@
+{% load web_extras %}
+<section class="card" aria-labelledby="pr-t">
+  <h2 id="pr-t" class="card-title">Prix client</h2>
+  <table>
+    <caption class="sr-only">Détail du prix</caption>
+    <thead><tr><th scope="col">Désignation</th><th scope="col" class="num">Quantité</th><th scope="col" class="num">Prix unitaire</th><th scope="col" class="num">Total</th></tr></thead>
+    <tbody>
+      {% for row in price_rows %}
+      <tr><td><strong>{{ row.label }}</strong><div class="muted">{{ row.detail }}</div></td>
+        <td class="num">{{ row.qty }}</td><td class="num"{% if row.unit_field %} data-terms="{{ row.unit_field }}"{% endif %}>{% if not row.unit_field %}{{ row.unit|xaf }}{% endif %}</td><td class="num"{% if row.unit_field %} data-terms="{{ row.unit_field }}*{{ row.qty }}"{% endif %}>{% if not row.unit_field %}{{ row.total|xaf }}{% endif %}</td></tr>
+      {% endfor %}
+      <tr class="total-row"><th scope="row" colspan="3">Total à payer</th><td class="num strong"{% if live_total %} data-terms="{{ live_total }}"{% endif %}>{% if not live_total %}{{ totals.price_xaf|xaf }}{% endif %}</td></tr>
+    </tbody>
+  </table>
+</section>

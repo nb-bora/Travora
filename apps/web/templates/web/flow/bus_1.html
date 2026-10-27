@@ -1,0 +1,44 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block total_attrs %} data-terms="id_seats*id_price_per_seat"{% endblock %}
+{% block flow_body %}
+<section class="card" aria-labelledby="route-t">
+  <h2 id="route-t" class="card-title">Trajet</h2>
+  <div class="grid-4">
+    {% include "web/_field.html" with field=form.origin %}
+    {% include "web/_field.html" with field=form.destination %}
+    {% include "web/_field.html" with field=form.departure_date %}
+    {% include "web/_field.html" with field=form.seats %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="dep-t">
+  <div class="section-row"><h2 id="dep-t">Le départ</h2><span class="muted">Horaire et tarif connus de l'agence</span></div>
+  <div class="grid-4">
+    {% include "web/_field.html" with field=form.departure_time %}
+    {% include "web/_field.html" with field=form.carrier %}
+    {% include "web/_field.html" with field=form.station %}
+    {% include "web/_field.html" with field=form.service_class %}
+    {% include "web/_field.html" with field=form.price_per_seat %}
+    {% include "web/_field.html" with field=form.trip_code hint="Si le transporteur en donne un" %}
+  </div>
+</section>
+
+<section class="notice notice-warning" aria-labelledby="conf-t">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+  <div>
+    <strong id="conf-t">Places à confirmer avec le transporteur</strong>
+    <p>Travora ne voit pas les places libres. Appelez le transporteur avant de vendre, puis cochez.</p>
+    <label class="check-line"><input type="checkbox" name="{{ form.seats_confirmed.html_name }}" id="{{ form.seats_confirmed.id_for_label }}"{% if form.seats_confirmed.value %} checked{% endif %}> Les places sont confirmées par téléphone</label>
+    {% for error in form.seats_confirmed.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="client-t">
+  <h2 id="client-t" class="card-title">Client</h2>
+  <div class="grid-2">
+    {% include "web/_field.html" with field=form.customer_name %}
+    {% include "web/_field.html" with field=form.customer_phone hint="Retrouvé par son téléphone s'il existe déjà" %}
+  </div>
+</section>
+{% endblock %}
