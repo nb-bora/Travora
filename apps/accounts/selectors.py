@@ -10,7 +10,7 @@ def find_user_id(username: str) -> UUID | None:
 
 
 def active_membership(user_id: UUID) -> MembershipInfo | None:
-    membership = Membership.objects.filter(user_id=user_id, is_active=True).first()
+    membership = Membership.by_user.filter(user_id=user_id, is_active=True).first()
     if membership is None:
         return None
     return MembershipInfo(
