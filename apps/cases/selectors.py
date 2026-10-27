@@ -13,8 +13,14 @@ from apps.shared_kernel.actor import Actor
 ACTIVE = Q(lines__voided_at__isnull=True)
 
 
-def get_case(case_id: UUID) -> Case:
-    case = Case.objects.filter(id=case_id).first()
+def get_case(case_id: UUID, *, lock: bool = False) -> Case:
+    """Avec ``lock``, verrouille la ligne du dossier jusqu'à la fin de la transaction.
+
+    Toute opération qui change l'état d'un dossier ou son solde prend ce verrou : deux
+    opérations simultanées sur un même dossier s'exécutent l'une après l'autre.
+    """
+    queryset = Case.objects.select_for_update() if lock else Case.objects.all()
+    case = queryset.filter(id=case_id).first()
     if case is None:
         raise CaseNotFound(str(case_id))
     return case

@@ -59,7 +59,7 @@ def create_case(
 
 
 def require_open_case(case_id: UUID) -> Case:
-    case = selectors.get_case(case_id)
+    case = selectors.get_case(case_id, lock=True)
     if case.status != CaseStatus.OPEN:
         raise CaseNotOpen(case.reference)
     return case
@@ -227,7 +227,7 @@ def close_case(actor: Actor, *, case_id: UUID) -> None:
 def reopen_case(actor: Actor, *, case_id: UUID) -> None:
     """Rouvre un dossier clos pour corriger une erreur ; seul un dossier clos se rouvre."""
     actor.require_manager()
-    case = selectors.get_case(case_id)
+    case = selectors.get_case(case_id, lock=True)
     if case.status != CaseStatus.CLOSED:
         raise CaseNotClosed(case.reference)
     case.status = CaseStatus.OPEN
