@@ -35,5 +35,5 @@ class QuotesService:
         return selectors.quotes_for_case(case_id)
 
     @staticmethod
-    def expired_sent_quotes(actor: Actor) -> list[QuoteView]:
-        return selectors.expired_sent_quotes()
+    def expired_sent_quotes(actor: Actor, *, as_of: date | None = None) -> list[QuoteView]:
+        return selectors.expired_sent_quotes(as_of)
