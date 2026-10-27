@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Installer Poetry
         run: pipx install "poetry==${POETRY_VERSION}"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
@@ -77,7 +77,7 @@ jobs:
             libpango-1.0-0 libpangoft2-1.0-0 fonts-dejavu-core postgresql-client
       - name: Installer Poetry
         run: pipx install "poetry==${POETRY_VERSION}"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
@@ -102,7 +102,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Installer Poetry
         run: pipx install "poetry==${POETRY_VERSION}"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: poetry
