@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Devis {{ reference }}</title>
+  <style>
+    @page { size: A4; margin: 18mm; }
+    body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; color: #1b1b1b; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14mm; }
+    header img { max-height: 18mm; max-width: 50mm; }
+    h1 { font-size: 16pt; margin: 0 0 2mm; }
+    .meta { color: #555; margin: 0 0 8mm; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 2.5mm 2mm; border-bottom: 0.3mm solid #ccc; }
+    th.amount, td.amount { text-align: right; white-space: nowrap; }
+    tfoot td { font-weight: bold; border-bottom: none; }
+    .validity { margin-top: 10mm; color: #555; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Devis {{ reference }}</h1>
+      <p class="meta">Version {{ version }} · {{ customer_name }}</p>
+    </div>
+    {% if logo_uri %}<img src="{{ logo_uri }}" alt="{{ agency_name }}">{% else %}<strong>{{ agency_name }}</strong>{% endif %}
+  </header>
+  <table>
+    <thead>
+      <tr><th>Prestation</th><th>Passager</th><th class="amount">Prix</th></tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <td>{{ line.label }}</td>
+        <td>{{ line.passenger_name }}</td>
+        <td class="amount">{{ line.price }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="2">Total</td><td class="amount">{{ total }}</td></tr>
+    </tfoot>
+  </table>
+  <p class="validity">Devis valable jusqu'au {{ valid_until|date:"d/m/Y" }}.</p>
+</body>
+</html>
