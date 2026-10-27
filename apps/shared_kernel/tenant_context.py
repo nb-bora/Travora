@@ -5,6 +5,10 @@ Les politiques RLS lisent deux variables de transaction PostgreSQL, ``app.agency
 elles disparaissent à la fin de celle-ci, même avec des connexions persistantes. Quand la
 transaction est marquée pour annulation, le point de sauvegarde restaure lui-même la valeur
 précédente : aucune requête ne doit alors être émise.
+
+Les contraintes différées (équilibre du journal, clés étrangères) sont vérifiées à la sortie
+du contexte, tant que la variable d'agence est posée : au COMMIT, elle ne le serait plus et la
+RLS masquerait les lignes à contrôler.
 """
 
 from collections.abc import Iterator
@@ -66,6 +70,7 @@ def tenant_scope(agency_id: UUID, user_id: UUID | None = None) -> Iterator[None]
         finally:
             _current_agency.reset(token)
         if not connection.needs_rollback:
+            connection.check_constraints()
             _set_setting(AGENCY_SETTING, previous_agency)
             _set_setting(USER_SETTING, previous_user)
 
