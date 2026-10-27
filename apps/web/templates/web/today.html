@@ -2,51 +2,89 @@
 {% load web_extras %}
 {% block title %}Aujourd'hui · Travora{% endblock %}
 {% block content %}
-<section class="hero" aria-labelledby="quick-title">
-  <h1 id="quick-title">Nouveau dossier</h1>
-  <p class="hero-sub">Un client, un trajet, un prix : tout est créé en un seul geste.</p>
-  <form method="post" action="{% url 'web:quick_entry' %}" class="quick card" novalidate>
-    {% csrf_token %}
+<form method="post" action="{% url 'web:quick_entry' %}" class="hero" aria-labelledby="quick-title" novalidate>
+  {% csrf_token %}
+  <div class="hero-head">
+    <div>
+      <h1 id="quick-title">Nouveau dossier</h1>
+      <p class="hero-sub">Un client, un trajet, un prix. Tout est créé en un seul geste.</p>
+    </div>
     <fieldset class="modes">
       <legend class="sr-only">Mode de transport</legend>
       {% for radio in quick_form.kind %}
-        <label class="mode">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+        <label class="mode">{{ radio.tag }}<span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ radio.data.value|kind_icon }}"/></svg>
+          {{ radio.choice_label }}</span></label>
       {% endfor %}
     </fieldset>
+  </div>
 
+  <div class="quick">
     <div class="quick-grid">
-      <div class="field route-only">{{ quick_form.origin.label_tag }}{{ quick_form.origin }}{% for e in quick_form.origin.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
-      <div class="field route-only">{{ quick_form.destination.label_tag }}{{ quick_form.destination }}{% for e in quick_form.destination.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
-      <div class="field service-only">{{ quick_form.service_label.label_tag }}{{ quick_form.service_label }}{% for e in quick_form.service_label.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
-      <div class="field">{{ quick_form.departure_date.label_tag }}{{ quick_form.departure_date }}{% for e in quick_form.departure_date.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
-      <div class="field">{{ quick_form.customer_name.label_tag }}{{ quick_form.customer_name }}{% for e in quick_form.customer_name.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
-      <div class="field">{{ quick_form.customer_phone.label_tag }}{{ quick_form.customer_phone }}{% for e in quick_form.customer_phone.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
-      <div class="field">{{ quick_form.passenger_name.label_tag }}{{ quick_form.passenger_name }}</div>
-      <div class="field route-only">{{ quick_form.carrier.label_tag }}{{ quick_form.carrier }}</div>
-      <div class="field route-only">{{ quick_form.ticket_number.label_tag }}{{ quick_form.ticket_number }}</div>
-      <div class="field">{{ quick_form.price_xaf.label_tag }}{{ quick_form.price_xaf }}{% for e in quick_form.price_xaf.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
-      <div class="field">{{ quick_form.cost_xaf.label_tag }}{{ quick_form.cost_xaf }}</div>
+      {% include "web/_field.html" with field=quick_form.origin class="route-only" %}
+      {% include "web/_field.html" with field=quick_form.destination class="route-only" %}
+      {% include "web/_field.html" with field=quick_form.service_label class="service-only span-2" %}
+      {% include "web/_field.html" with field=quick_form.departure_date %}
+      {% include "web/_field.html" with field=quick_form.passenger_name %}
+      {% include "web/_field.html" with field=quick_form.customer_name %}
+      {% include "web/_field.html" with field=quick_form.customer_phone %}
+      {% include "web/_field.html" with field=quick_form.carrier class="route-only" %}
+      {% include "web/_field.html" with field=quick_form.ticket_number class="route-only" %}
+      {% include "web/_field.html" with field=quick_form.price_xaf %}
+      {% include "web/_field.html" with field=quick_form.cost_xaf hint="Saisissable par tous, lisible par le gérant seulement" %}
+      <div class="quick-cta span-2">
+        <p>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
+          Client retrouvé par son téléphone, tout est créé ensemble
+        </p>
+        <button class="btn btn-primary btn-lg" type="submit">Créer le dossier</button>
+      </div>
     </div>
-    <div class="actions"><button class="btn btn-primary btn-lg" type="submit">Créer le dossier</button></div>
-  </form>
+  </div>
+</form>
+
+{% if overdue_count %}
+<section class="suggestion" aria-label="Suggestion">
+  <span class="suggestion-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></span>
+  <div class="suggestion-text">
+    <strong>{{ overdue_count }} dossier{{ overdue_count|pluralize }} en retard de paiement</strong>
+    <span>Ouvrez la liste des impayés pour relancer vos clients.</span>
+  </div>
+  <a class="btn btn-primary" href="{% url 'web:case_list' %}?etat=impayes">Voir les impayés</a>
 </section>
+{% endif %}
 
 <section class="stats" aria-label="Chiffres clés">
-  <article class="card stat"><p class="stat-label">Dossiers ouverts</p><p class="stat-value">{{ snapshot.open_cases }}</p></article>
-  <article class="card stat"><p class="stat-label">Créances</p><p class="stat-value">{{ snapshot.receivables_xaf|xaf }}</p></article>
+  <article class="card stat"><p class="stat-label">Dossiers ouverts</p><p class="stat-value">{{ snapshot.open_cases }}</p><p class="stat-hint">En cours de traitement</p></article>
+  <article class="card stat"><p class="stat-label">Créances</p><p class="stat-value">{{ snapshot.receivables_xaf|xaf }}</p><p class="stat-hint">Somme des soldes dus</p></article>
   {% if is_manager %}
-  <article class="card stat"><p class="stat-label">Marge encaissée</p><p class="stat-value">{{ snapshot.realized_margin_xaf|xaf }}</p></article>
+  <article class="card stat"><p class="stat-label">Marge encaissée</p><p class="stat-value">{{ snapshot.realized_margin_xaf|xaf }}</p><p class="stat-hint">Dossiers entièrement soldés</p></article>
   {% endif %}
-  <article class="card stat"><p class="stat-label">Dossiers à risque</p><p class="stat-value">{{ snapshot.at_risk_cases }}</p></article>
+  <article class="card stat"><p class="stat-label">Dossiers à risque</p><p class="stat-value">{{ snapshot.at_risk_cases }}</p><p class="stat-hint">Retard ou départ proche non soldé</p></article>
 </section>
 
-<section aria-labelledby="alerts-title">
-  <h2 id="alerts-title">À surveiller</h2>
-  {% for alert in snapshot.alerts %}
-    <article class="card alert-row"><span class="badge badge-warning">{{ alert.kind.label }}</span>
-      <strong>{{ alert.reference }}</strong> <span class="muted">{{ alert.detail }}</span></article>
-  {% empty %}
-    <div class="card empty"><p><strong>Rien d'urgent.</strong></p><p class="muted">Aucun impayé en retard, aucun départ proche non soldé, aucun devis expiré.</p></div>
-  {% endfor %}
+<section class="card todo" aria-labelledby="todo-title">
+  <div class="todo-head">
+    <h2 id="todo-title">À faire aujourd'hui</h2>
+    <a href="{% url 'web:case_list' %}" class="go">Voir tous les dossiers</a>
+  </div>
+  {% if snapshot.alerts %}
+  <ul>
+    {% for alert in snapshot.alerts %}
+    <li>
+      <span class="badge {% if alert.kind.value == 'overdue_balance' %}badge-danger{% elif alert.kind.value == 'departure_soon' %}badge-warning{% else %}badge-neutral{% endif %}">{{ alert.kind.label }}</span>
+      <div class="todo-main"><strong><a href="{% url 'web:case_detail' alert.case_id %}">{{ alert.reference }}</a></strong>
+        <div class="muted">{{ alert.detail }}</div></div>
+      <a class="go" href="{% url 'web:case_detail' alert.case_id %}">Ouvrir
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty">
+    <p><strong>Rien d'urgent.</strong></p>
+    <p class="muted">Aucun impayé en retard, aucun départ proche non soldé, aucun devis expiré.</p>
+  </div>
+  {% endif %}
 </section>
 {% endblock %}

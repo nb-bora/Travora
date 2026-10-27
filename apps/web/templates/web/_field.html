@@ -1,0 +1,6 @@
+<div class="field {{ class }}">
+  {{ field.label_tag }}
+  {{ field }}
+  {% for error in field.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
+  {% if hint %}<p class="field-hint">{{ hint }}</p>{% endif %}
+</div>

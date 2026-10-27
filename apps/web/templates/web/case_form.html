@@ -1,10 +1,16 @@
 {% extends "web/base.html" %}
 {% block title %}Nouveau dossier · Travora{% endblock %}
 {% block content %}
-<header class="page-head"><h1>Nouveau dossier</h1></header>
-<form method="post" class="card form">
+<header class="page-head">
+  <div>
+    <p class="breadcrumb"><a href="{% url 'web:case_list' %}">← Dossiers</a></p>
+    <h1>Nouveau dossier</h1>
+    <p class="muted">Pour saisir aussi une première ligne en un geste, utilisez la saisie rapide de l'écran « Aujourd'hui ».</p>
+  </div>
+</header>
+<form method="post" class="card form" style="max-width: 560px">
   {% csrf_token %}
-  {% include "web/_form_fields.html" with form=form %}
+  {% for field in form %}{% include "web/_field.html" with field=field %}{% endfor %}
   <div class="actions">
     <button class="btn btn-primary" type="submit">Créer le dossier</button>
     <a class="btn btn-secondary" href="{% url 'web:case_list' %}">Annuler</a>

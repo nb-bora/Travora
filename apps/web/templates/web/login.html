@@ -1,20 +1,34 @@
 {% extends "web/base.html" %}
 {% block title %}Connexion · Travora{% endblock %}
 {% block shell %}
-<main id="main" class="auth">
-  <form method="post" class="card auth-card">
-    {% csrf_token %}
-    <h1>Travora</h1>
-    <p class="muted">Connectez-vous à votre agence.</p>
-    {% if form.errors %}
-      <p class="alert alert-danger" role="alert">Identifiant ou mot de passe incorrect.</p>
-    {% endif %}
-    <label for="id_username">Identifiant</label>
-    <input id="id_username" name="username" autocomplete="username" autofocus required>
-    <label for="id_password">Mot de passe</label>
-    <input id="id_password" name="password" type="password" autocomplete="current-password" required>
-    <input type="hidden" name="next" value="{{ next }}">
-    <button class="btn btn-primary" type="submit">Se connecter</button>
-  </form>
-</main>
+<div class="auth">
+  <aside class="auth-brand" aria-hidden="true">
+    <span class="brand"><span class="brand-mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b1f3a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l7-12 4 7 3-4 4 9z"/></svg></span><span class="brand-name">Travora</span></span>
+    <div>
+      <h2>Vos dossiers, vos paiements, vos marges. Sans double saisie.</h2>
+      <p>Avion, bus, train, bateau : un seul outil pour suivre chaque voyage, de la demande du client au billet remis.</p>
+    </div>
+    <ul class="auth-points">
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Chaque agence ne voit que ses propres données</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Le coût et la marge restent réservés au gérant</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>Un journal comptable qu'on ne peut ni modifier ni effacer</li>
+    </ul>
+  </aside>
+  <main id="main" class="auth-panel">
+    <form method="post" class="card auth-card">
+      {% csrf_token %}
+      <h1>Connexion</h1>
+      <p class="muted" style="margin:0">Connectez-vous à votre agence.</p>
+      {% if form.errors %}
+        <p class="alert alert-danger" role="alert">Identifiant ou mot de passe incorrect.</p>
+      {% endif %}
+      <div class="field"><label for="id_username">Identifiant</label>
+        <input id="id_username" name="username" autocomplete="username" autofocus required></div>
+      <div class="field"><label for="id_password">Mot de passe</label>
+        <input id="id_password" name="password" type="password" autocomplete="current-password" required></div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-primary btn-lg" type="submit">Se connecter</button>
+    </form>
+  </main>
+</div>
 {% endblock %}
