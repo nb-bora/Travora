@@ -4,91 +4,137 @@
 {% block content %}
 <header class="page-head">
   <div>
-    <p class="muted"><a href="{% url 'web:case_list' %}">← Dossiers</a></p>
+    <p class="breadcrumb"><a href="{% url 'web:case_list' %}">← Dossiers</a></p>
     <h1>{{ summary.reference }} · {{ summary.customer_name }}</h1>
     <p>{% include "web/_status_badge.html" with status=summary.status balance=summary.balance_xaf %}
-      <span class="muted">Départ : {{ summary.departure_date|date:"j M Y"|default:"non précisé" }}</span></p>
+      <span class="muted">&nbsp;Départ : {{ summary.departure_date|date:"j N Y"|default:"non précisé" }}</span></p>
   </div>
-  <div class="balance card">
-    <p class="stat-label">Solde dû</p>
-    <p class="stat-value">{{ summary.balance_xaf|xaf }}</p>
-    {% if is_manager %}<p class="muted">Marge prévue : {% if summary.has_unknown_cost %}coût à saisir{% else %}{{ summary.expected_margin_xaf|xaf }}{% endif %}</p>{% endif %}
+  <div class="card balance">
+    <div><p class="stat-label">Solde dû</p><p class="stat-value" style="font-size:28px;font-weight:600;letter-spacing:-0.02em">{{ summary.balance_xaf|xaf }}</p></div>
+    {% if is_manager %}
+    <div class="sep"><p class="stat-label">Marge prévue</p>
+      <p class="stat-value" style="font-size:28px;font-weight:600;letter-spacing:-0.02em">{% if summary.has_unknown_cost %}<span class="badge badge-warning">Coût à saisir</span>{% else %}{{ summary.expected_margin_xaf|xaf }}{% endif %}</p></div>
+    {% endif %}
   </div>
 </header>
 
-<section aria-labelledby="lines-title">
-  <h2 id="lines-title">Lignes</h2>
-  {% if detail.lines %}
-  <div class="card table-wrap"><table>
-    <thead><tr><th>Type</th><th>Libellé</th><th>Passager</th><th>Référence</th>
-      <th class="num">Prix</th>{% if is_manager %}<th class="num">Coût</th><th class="num">Marge</th>{% endif %}<th>État</th><th></th></tr></thead>
-    <tbody>
-    {% for line in detail.lines %}
-      <tr{% if line.is_voided %} class="voided"{% endif %}>
-        <td>{{ line.kind.label }}</td>
-        <td>{{ line.label }}{% if line.carrier %}<br><span class="muted">{{ line.carrier }}</span>{% endif %}</td>
-        <td>{{ line.passenger_name|default:"—" }}</td>
-        <td>{{ line.ticket_number|default:"—" }}</td>
-        <td class="num">{{ line.price_xaf|xaf }}</td>
-        {% if is_manager %}<td class="num">{% if line.cost_xaf is None %}<span class="badge badge-warning">À saisir</span>{% else %}{{ line.cost_xaf|xaf }}{% endif %}</td>
-        <td class="num">{{ line.margin_xaf|xaf }}</td>{% endif %}
-        <td>{% if line.is_voided %}<span class="badge badge-danger">✕ Annulée</span>{% elif line.issued_on %}<span class="badge badge-success">✓ Émise</span>{% else %}<span class="badge badge-neutral">Brouillon</span>{% endif %}</td>
-        <td class="row-actions">
-          {% if is_open and not line.is_voided %}
-            {% if not line.issued_on %}
-            <form method="post" action="{% url 'web:line_issue' summary.id line.id %}">{% csrf_token %}<button class="btn btn-secondary" type="submit">Émettre</button></form>
-            {% elif is_manager %}
-            <form method="post" action="{% url 'web:line_void' summary.id line.id %}">{% csrf_token %}<button class="btn btn-ghost" type="submit">Annuler</button></form>
+<div class="layout-2">
+  <div class="layout-main">
+
+    <section class="card table-wrap" aria-labelledby="lines-title">
+      <div class="section-head"><h2 id="lines-title">Lignes</h2></div>
+      {% if detail.lines %}
+      <table>
+        <caption class="sr-only">Lignes du dossier</caption>
+        <thead><tr>
+          <th scope="col">Prestation</th><th scope="col">Passager</th><th scope="col">Référence</th>
+          <th scope="col" class="num">Prix</th>
+          {% if is_manager %}<th scope="col" class="num">Coût</th><th scope="col" class="num">Marge</th>{% endif %}
+          <th scope="col">État</th><th scope="col"><span class="sr-only">Actions</span></th>
+        </tr></thead>
+        <tbody>
+        {% for line in detail.lines %}
+          <tr{% if line.is_voided %} class="voided"{% endif %}>
+            <td><span class="kind">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ line.kind|kind_icon }}"/></svg>
+              <span><strong>{{ line.label }}</strong><small>{{ line.kind.label }}{% if line.carrier %} · {{ line.carrier }}{% endif %}</small></span></span></td>
+            <td>{{ line.passenger_name|default:"—" }}</td>
+            <td style="font-variant-numeric:tabular-nums">{{ line.ticket_number|default:"—" }}</td>
+            <td class="num">{{ line.price_xaf|xaf }}</td>
+            {% if is_manager %}
+            <td class="num">{% if line.cost_xaf is None %}<span class="badge badge-warning">À saisir</span>{% else %}{{ line.cost_xaf|xaf }}{% endif %}</td>
+            <td class="num">{{ line.margin_xaf|xaf|default:"—" }}</td>
             {% endif %}
-          {% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody></table></div>
-  {% else %}
-    <div class="card empty"><p><strong>Aucune ligne.</strong></p><p class="muted">Ajoutez un billet ou une prestation ci-dessous.</p></div>
-  {% endif %}
-</section>
+            <td>{% if line.is_voided %}<span class="badge badge-danger">✕ Annulée</span>{% elif line.issued_on %}<span class="badge badge-success">✓ Émise</span>{% else %}<span class="badge badge-neutral">Brouillon</span>{% endif %}</td>
+            <td class="row-actions">
+              {% if is_open and not line.is_voided %}
+                {% if not line.issued_on %}
+                <form method="post" action="{% url 'web:line_issue' summary.id line.id %}">{% csrf_token %}<button class="btn btn-secondary btn-sm" type="submit">Émettre</button></form>
+                {% elif is_manager %}
+                <form method="post" action="{% url 'web:line_void' summary.id line.id %}">{% csrf_token %}<button class="btn btn-ghost btn-sm" type="submit">Annuler</button></form>
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty"><p><strong>Aucune ligne.</strong></p><p class="muted">Ajoutez un billet ou une prestation ci-dessous.</p></div>
+      {% endif %}
 
-<section aria-labelledby="payments-title">
-  <h2 id="payments-title">Encaissements</h2>
-  {% if payments %}
-  <div class="card table-wrap"><table>
-    <thead><tr><th>Date</th><th>Mode</th><th>Référence</th><th class="num">Montant</th><th>État</th></tr></thead>
-    <tbody>{% for payment in payments %}
-      <tr{% if payment.is_voided %} class="voided"{% endif %}><td>{{ payment.received_on|date:"j M Y" }}</td><td>{{ payment.method.label }}</td>
-        <td>{{ payment.reference|default:"—" }}</td><td class="num">{{ payment.amount_xaf|xaf }}</td>
-        <td>{% if payment.is_voided %}<span class="badge badge-danger">✕ Annulé</span>{% else %}<span class="badge badge-success">✓ Reçu</span>{% endif %}</td></tr>
-    {% endfor %}</tbody></table></div>
-  {% else %}
-    <div class="card empty"><p class="muted">Aucun encaissement pour l'instant.</p></div>
-  {% endif %}
-</section>
+      {% if is_open %}
+      <details class="add"{% if line_form.errors %} open{% endif %}>
+        <summary>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Ajouter une ligne</summary>
+        <form method="post" action="{% url 'web:line_add' summary.id %}" class="form">
+          {% csrf_token %}
+          {% include "web/_field.html" with field=line_form.kind %}
+          {% include "web/_field.html" with field=line_form.label %}
+          {% include "web/_field.html" with field=line_form.passenger_name %}
+          {% include "web/_field.html" with field=line_form.carrier %}
+          {% include "web/_field.html" with field=line_form.ticket_number hint="Avion : chiffres ; autres modes : code de réservation" %}
+          <div></div>
+          {% include "web/_field.html" with field=line_form.price_xaf %}
+          {% include "web/_field.html" with field=line_form.cost_xaf hint="Saisissable par tous, lisible par le gérant seulement" %}
+          <div class="actions"><button class="btn btn-primary" type="submit">Ajouter la ligne</button></div>
+        </form>
+      </details>
+      {% endif %}
+    </section>
 
-{% if is_open %}
-<div class="two-cols">
-  <section class="card" aria-labelledby="add-line-title">
-    <h2 id="add-line-title">Ajouter une ligne</h2>
-    <form method="post" action="{% url 'web:line_add' summary.id %}" class="form">
-      {% csrf_token %}{% include "web/_form_fields.html" with form=line_form %}
-      <button class="btn btn-primary" type="submit">Ajouter</button>
-    </form>
-  </section>
-  <section class="card" aria-labelledby="add-payment-title">
-    <h2 id="add-payment-title">Encaisser</h2>
-    <form method="post" action="{% url 'web:payment_add' summary.id %}" class="form">
-      {% csrf_token %}{% include "web/_form_fields.html" with form=payment_form %}
-      <button class="btn btn-primary" type="submit">Enregistrer l'encaissement</button>
-    </form>
-  </section>
+    <section class="card table-wrap" aria-labelledby="pay-title">
+      <div class="section-head"><h2 id="pay-title">Encaissements</h2></div>
+      {% if payments %}
+      <ul class="pay-list">
+        {% for payment in payments %}
+        <li{% if payment.is_voided %} class="voided"{% endif %}>
+          <span class="pay-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+          <div class="pay-main"><strong>{{ payment.method.label }}{% if payment.reference %} · {{ payment.reference }}{% endif %}</strong>
+            <div class="muted">{{ payment.received_on|date:"j N Y" }}</div></div>
+          <span class="strong num">{{ payment.amount_xaf|xaf }}</span>
+          {% if payment.is_voided %}<span class="badge badge-danger">✕ Annulé</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty"><p class="muted">Aucun encaissement pour l'instant.</p></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="layout-aside" aria-label="Actions">
+    {% if is_open %}
+    <section class="card" aria-labelledby="add-payment-title">
+      <h2 id="add-payment-title" style="margin-bottom:12px">Encaisser</h2>
+      <form method="post" action="{% url 'web:payment_add' summary.id %}" class="form">
+        {% csrf_token %}
+        {% include "web/_field.html" with field=payment_form.method %}
+        {% include "web/_field.html" with field=payment_form.amount_xaf hint="Pré-rempli avec le solde dû" %}
+        {% include "web/_field.html" with field=payment_form.reference hint="Obligatoire hors espèces, unique dans l'agence" %}
+        {% include "web/_field.html" with field=payment_form.received_on %}
+        {{ payment_form.idempotency_key }}
+        <button class="btn btn-primary" type="submit">Enregistrer l'encaissement</button>
+      </form>
+    </section>
+    <section class="card" aria-labelledby="actions-title">
+      <h2 id="actions-title" style="margin-bottom:12px">Autres actions</h2>
+      <form method="post" action="{% url 'web:case_close' summary.id %}" class="form">
+        {% csrf_token %}
+        <button class="btn btn-secondary" type="submit">Clore le dossier</button>
+        <p class="field-hint">La clôture n'est possible qu'à solde nul.</p>
+      </form>
+    </section>
+    {% elif summary.status.value == "closed" and is_manager %}
+    <section class="card" aria-labelledby="reopen-title">
+      <h2 id="reopen-title" style="margin-bottom:12px">Dossier clos</h2>
+      <form method="post" action="{% url 'web:case_reopen' summary.id %}" class="form">
+        {% csrf_token %}
+        <button class="btn btn-secondary" type="submit">Rouvrir le dossier</button>
+      </form>
+    </section>
+    {% endif %}
+  </aside>
 </div>
-<form method="post" action="{% url 'web:case_close' summary.id %}" class="close-form">
-  {% csrf_token %}<button class="btn btn-secondary" type="submit">Clore le dossier</button>
-  <span class="muted">Possible seulement quand le solde est nul.</span>
-</form>
-{% elif summary.status.value == "closed" and is_manager %}
-<form method="post" action="{% url 'web:case_reopen' summary.id %}" class="close-form">
-  {% csrf_token %}<button class="btn btn-secondary" type="submit">Rouvrir le dossier</button>
-</form>
-{% endif %}
 {% endblock %}

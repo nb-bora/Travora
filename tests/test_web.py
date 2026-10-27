@@ -316,3 +316,32 @@ def test_a_failed_quick_entry_leaves_nothing_behind(agency_a: AgencyFixture) -> 
     listing = client.get(reverse("web:case_list")).content.decode()
     assert "Autre Client" not in listing
     assert listing.count("Marie Ndong") == 1
+
+
+def test_the_list_tabs_count_and_filter_unpaid_and_upcoming_cases(agency_a: AgencyFixture) -> None:
+    manager = login("alpha-manager")
+    soon = str(timezone.localdate() + timezone.timedelta(days=3))
+    created = manager.post(
+        reverse("web:quick_entry"),
+        quick_data(departure_date=soon, ticket_number="", customer_phone=""),
+    )
+    url = created["Location"]
+    line_id = manager.get(url).content.decode().split("/lignes/")[1].split("/")[0]
+    manager.post(f"{url}lignes/{line_id}/emettre/")
+
+    listing = reverse("web:case_list")
+    unpaid = manager.get(listing, {"etat": "impayes"}).content.decode()
+    upcoming = manager.get(listing, {"etat": "depart"}).content.decode()
+    closed = manager.get(listing, {"etat": "clos"}).content.decode()
+
+    assert "Marie Ndong" in unpaid
+    assert "Marie Ndong" in upcoming
+    assert "Marie Ndong" not in closed
+    assert 'Impayés <span class="count">1</span>' in unpaid
+    assert 'Clos <span class="count">0</span>' in unpaid
+
+
+def test_the_shell_shows_the_agency_and_the_role(agency_a: AgencyFixture) -> None:
+    page = login("alpha-agent").get(reverse("web:today")).content.decode()
+    assert "Alpha" in page
+    assert ">Agent<" in page

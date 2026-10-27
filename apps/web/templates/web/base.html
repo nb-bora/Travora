@@ -4,33 +4,69 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Travora{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'web/travora.css' %}">
+  <link rel="preload" href="{% static 'web/fonts/inter-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'web/travora.css' %}?v=3">
 </head>
 <body>
   <a class="skip" href="#main">Aller au contenu</a>
   {% block shell %}
+  {% with url_name=request.resolver_match.url_name %}
   <div class="shell">
     <nav class="sidebar" aria-label="Navigation principale">
-      <a class="brand" href="{% url 'web:today' %}">Travora</a>
-      <ul>
-        <li><a href="{% url 'web:today' %}"{% if request.resolver_match.url_name == 'today' %} aria-current="page"{% endif %}>Aujourd'hui</a></li>
-        <li><a href="{% url 'web:case_list' %}"{% if request.resolver_match.url_name|slice:':4' == 'case' %} aria-current="page"{% endif %}>Dossiers</a></li>
+      <a class="brand" href="{% url 'web:today' %}">
+        <span class="brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1F3A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l7-12 4 7 3-4 4 9z"/></svg></span>
+        <span class="brand-name">Travora</span>
+      </a>
+      <ul class="nav">
+        <li><a href="{% url 'web:today' %}"{% if url_name == 'today' %} aria-current="page"{% endif %}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>
+          <span>Aujourd'hui</span></a></li>
+        <li><a href="{% url 'web:case_list' %}"{% if url_name|slice:':4' == 'case' %} aria-current="page"{% endif %}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <span>Dossiers</span></a></li>
       </ul>
+      {% if shell %}
+      <div class="agency-box">
+        <div class="agency-label">Agence</div>
+        <div class="agency-name">{{ shell.agency }}</div>
+        <div class="agency-label">{{ shell.role_label }}</div>
+      </div>
+      {% endif %}
       <form method="post" action="{% url 'web:logout' %}" class="logout">
         {% csrf_token %}<button class="btn btn-ghost" type="submit">Se déconnecter</button>
       </form>
     </nav>
-    <main id="main" class="main">
-      {% if messages %}
-      <div class="messages" role="status" aria-live="polite">
-        {% for message in messages %}
-          <p class="alert {% if message.level_tag == 'error' %}alert-danger{% else %}alert-success{% endif %}">{{ message }}</p>
-        {% endfor %}
-      </div>
-      {% endif %}
-      {% block content %}{% endblock %}
-    </main>
+
+    <div class="content">
+      <header class="topbar">
+        <form method="get" action="{% url 'web:case_list' %}" class="search" role="search">
+          <label for="search" class="sr-only">Rechercher un dossier</label>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.5-4.5"/></svg>
+          <input id="search" type="search" name="q" placeholder="Rechercher un dossier ou un client…" autocomplete="off">
+          <input type="hidden" name="etat" value="tous">
+          <span class="kbd" aria-hidden="true">Ctrl K</span>
+        </form>
+        {% if shell %}
+        <div class="who">
+          <span class="avatar" aria-hidden="true">{{ shell.initials }}</span>
+          <span class="who-text"><strong>{{ shell.username }}</strong><small>{{ shell.role_label }}</small></span>
+        </div>
+        {% endif %}
+      </header>
+      <main id="main" class="main">
+        {% if messages %}
+        <div class="messages" role="status" aria-live="polite">
+          {% for message in messages %}
+            <p class="alert {% if message.level_tag == 'error' %}alert-danger{% else %}alert-success{% endif %}">{{ message }}</p>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
   </div>
+  {% endwith %}
   {% endblock %}
+  <script src="{% static 'web/app.js' %}?v=1" defer></script>
 </body>
 </html>

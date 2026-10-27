@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from typing import cast
 from uuid import UUID
 
@@ -9,9 +10,11 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.cases.constants import CaseStatus, LineKind
+from apps.cases.dto import CaseSummary
 from apps.cases.exceptions import CaseNotFound
 from apps.cases.services.public import CasesService
 from apps.crm.services.public import CrmService
+from apps.dashboard.constants import AlertKind
 from apps.dashboard.services.public import DashboardService
 from apps.payments.constants import PaymentMethod
 from apps.payments.services.public import PaymentsService
@@ -47,20 +50,27 @@ def agency_required(view):  # type: ignore[no-untyped-def]
     return wrapper
 
 
+def _today_context(actor: Actor, quick_form: QuickEntryForm | None = None) -> dict[str, object]:
+    snapshot = DashboardService.snapshot(actor)
+    overdue = [a for a in snapshot.alerts if a.kind is AlertKind.OVERDUE_BALANCE]
+    return {
+        "snapshot": snapshot,
+        "is_manager": actor.can_view_financials,
+        "quick_form": quick_form or QuickEntryForm(),
+        "overdue_count": len(overdue),
+        "alert_icons": {
+            AlertKind.OVERDUE_BALANCE.value: "badge-danger",
+            AlertKind.DEPARTURE_SOON.value: "badge-warning",
+            AlertKind.QUOTE_EXPIRED.value: "badge-neutral",
+        },
+    }
+
+
 @agency_required
 @require_GET
 def today(request: HttpRequest) -> HttpResponse:
-    """Écran d'accueil : les chiffres du jour. Le rôle décide de ce qui est montré."""
-    actor = _actor(request)
-    return render(
-        request,
-        "web/today.html",
-        {
-            "snapshot": DashboardService.snapshot(actor),
-            "is_manager": actor.can_view_financials,
-            "quick_form": QuickEntryForm(),
-        },
-    )
+    """Écran d'accueil : saisie rapide et chiffres du jour. Le rôle décide de ce qui est montré."""
+    return render(request, "web/today.html", _today_context(_actor(request)))
 
 
 @agency_required
@@ -70,12 +80,7 @@ def quick_entry(request: HttpRequest) -> HttpResponse:
     actor = _actor(request)
     form = QuickEntryForm(request.POST)
     if not form.is_valid():
-        context = {
-            "snapshot": DashboardService.snapshot(actor),
-            "is_manager": actor.can_view_financials,
-            "quick_form": form,
-        }
-        return render(request, "web/today.html", context, status=422)
+        return render(request, "web/today.html", _today_context(actor, form), status=422)
     data = form.cleaned_data
     case_id: UUID | None = None
     with reporting(request):
@@ -102,12 +107,32 @@ def quick_entry(request: HttpRequest) -> HttpResponse:
     return redirect("web:case_detail", case_id=case_id)
 
 
+SOON = timedelta(days=7)
+
 FILTERS = {
-    "ouverts": ("Ouverts", CaseStatus.OPEN),
-    "clos": ("Clos", CaseStatus.CLOSED),
-    "annules": ("Annulés", CaseStatus.CANCELLED),
-    "tous": ("Tous", None),
+    "ouverts": "Ouverts",
+    "depart": "Départs sous 7 jours",
+    "impayes": "Impayés",
+    "clos": "Clos",
+    "tous": "Tous",
 }
+
+
+def _matches(case: CaseSummary, key: str, today_: date) -> bool:
+    is_open = case.status is CaseStatus.OPEN
+    if key == "ouverts":
+        return is_open
+    if key == "depart":
+        return (
+            is_open
+            and case.departure_date is not None
+            and today_ <= case.departure_date <= today_ + SOON
+        )
+    if key == "impayes":
+        return is_open and case.balance_xaf > 0
+    if key == "clos":
+        return case.status is CaseStatus.CLOSED
+    return True
 
 
 @agency_required
@@ -117,7 +142,10 @@ def case_list(request: HttpRequest) -> HttpResponse:
     key = request.GET.get("etat", "ouverts")
     if key not in FILTERS:
         key = "ouverts"
-    cases = CasesService.list_cases(actor, status=FILTERS[key][1])
+    today_ = timezone.localdate()
+    everything = CasesService.list_cases(actor)
+    counts = {slug: sum(_matches(c, slug, today_) for c in everything) for slug in FILTERS}
+    cases = [case for case in everything if _matches(case, key, today_)]
     query = request.GET.get("q", "").strip().lower()
     if query:
         cases = [
@@ -130,11 +158,13 @@ def case_list(request: HttpRequest) -> HttpResponse:
         "web/case_list.html",
         {
             "cases": cases,
-            "filters": [(slug, label) for slug, (label, _) in FILTERS.items()],
+            "tabs": [(slug, label, counts[slug]) for slug, label in FILTERS.items()],
             "current": key,
             "query": query,
             "is_manager": actor.can_view_financials,
-            "today": timezone.localdate(),
+            "today": today_,
+            "total_open": counts["ouverts"],
+            "attention": counts["impayes"],
         },
     )
 
@@ -177,7 +207,8 @@ def _detail_context(
         "summary": detail.summary,
         "payments": PaymentsService.payments_for_case(actor, case_id),
         "line_form": line_form or LineForm(),
-        "payment_form": payment_form or PaymentForm(),
+        "payment_form": payment_form
+        or PaymentForm(initial={"amount_xaf": max(detail.summary.balance_xaf, 0) or None}),
         "is_manager": actor.can_view_financials,
         "is_open": detail.summary.status is CaseStatus.OPEN,
     }

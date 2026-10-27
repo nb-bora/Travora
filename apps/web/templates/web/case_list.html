@@ -3,44 +3,52 @@
 {% block title %}Dossiers · Travora{% endblock %}
 {% block content %}
 <header class="page-head">
-  <h1>Dossiers</h1>
-  <a class="btn btn-primary" href="{% url 'web:case_create' %}">Nouveau dossier</a>
+  <div>
+    <h1>Dossiers</h1>
+    <p class="muted">{{ total_open }} dossier{{ total_open|pluralize }} ouvert{{ total_open|pluralize }}{% if attention %} · {{ attention }} avec un solde dû{% endif %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'web:case_create' %}">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    Nouveau dossier</a>
 </header>
 
 <form method="get" class="toolbar" role="search">
   <input type="hidden" name="etat" value="{{ current }}">
-  <input type="search" name="q" value="{{ query }}" placeholder="Référence ou client" aria-label="Rechercher un dossier">
+  <label for="list-q" class="sr-only">Rechercher</label>
+  <input id="list-q" type="search" name="q" value="{{ query }}" placeholder="Référence ou client">
   <button class="btn btn-secondary" type="submit">Rechercher</button>
 </form>
+
 <nav class="tabs" aria-label="Filtrer par état">
-  {% for slug, label in filters %}
-    <a href="?etat={{ slug }}{% if query %}&q={{ query|urlencode }}{% endif %}"{% if slug == current %} aria-current="true"{% endif %}>{{ label }}</a>
+  {% for slug, label, count in tabs %}
+    <a href="?etat={{ slug }}{% if query %}&q={{ query|urlencode }}{% endif %}"{% if slug == current %} aria-current="true"{% endif %}>{{ label }} <span class="count">{{ count }}</span></a>
   {% endfor %}
 </nav>
 
 {% if cases %}
 <div class="card table-wrap">
-<table>
-  <thead><tr>
-    <th>Référence</th><th>Client</th><th>Départ</th>
-    <th class="num">Prix</th><th class="num">Solde dû</th>
-    {% if is_manager %}<th class="num">Marge prévue</th>{% endif %}
-    <th>État</th>
-  </tr></thead>
-  <tbody>
-  {% for case in cases %}
-    <tr>
-      <td><a href="{% url 'web:case_detail' case.id %}">{{ case.reference }}</a></td>
-      <td>{{ case.customer_name }}</td>
-      <td>{{ case.departure_date|date:"j M Y"|default:"—" }}</td>
-      <td class="num">{{ case.price_total_xaf|xaf }}</td>
-      <td class="num">{% if case.balance_xaf > 0 %}<strong>{{ case.balance_xaf|xaf }}</strong>{% else %}{{ case.balance_xaf|xaf }}{% endif %}</td>
-      {% if is_manager %}<td class="num">{% if case.has_unknown_cost %}<span class="badge badge-warning">Coût à saisir</span>{% else %}{{ case.expected_margin_xaf|xaf }}{% endif %}</td>{% endif %}
-      <td>{% include "web/_status_badge.html" with status=case.status balance=case.balance_xaf %}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+  <table>
+    <caption class="sr-only">Liste des dossiers</caption>
+    <thead><tr>
+      <th scope="col">Référence</th><th scope="col">Client</th><th scope="col">Départ</th>
+      <th scope="col" class="num">Prix</th><th scope="col" class="num">Solde dû</th>
+      {% if is_manager %}<th scope="col" class="num">Marge prévue</th>{% endif %}
+      <th scope="col">État</th>
+    </tr></thead>
+    <tbody>
+    {% for case in cases %}
+      <tr>
+        <td class="strong"><a href="{% url 'web:case_detail' case.id %}">{{ case.reference }}</a></td>
+        <td>{{ case.customer_name }}</td>
+        <td class="muted">{{ case.departure_date|date:"j N Y"|default:"—" }}</td>
+        <td class="num">{{ case.price_total_xaf|xaf }}</td>
+        <td class="num{% if case.balance_xaf > 0 %} strong{% endif %}">{{ case.balance_xaf|xaf }}</td>
+        {% if is_manager %}<td class="num">{% if case.has_unknown_cost %}<span class="badge badge-warning">Coût à saisir</span>{% else %}{{ case.expected_margin_xaf|xaf }}{% endif %}</td>{% endif %}
+        <td>{% include "web/_status_badge.html" with status=case.status balance=case.balance_xaf %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% else %}
 <div class="card empty">
