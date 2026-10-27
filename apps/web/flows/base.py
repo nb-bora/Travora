@@ -48,6 +48,7 @@ class FlowDef:
     extra_form: ClassVar[type[forms.Form] | None] = None
     pricing_step: ClassVar[int] = 3  # 2 pour l'avion : le tarif se saisit avec les passagers
     template_prefix: ClassVar[str]
+    default_method: ClassVar[str] = "mobile_money"
 
     # --- lecture du brouillon -------------------------------------------------------------
     @staticmethod
@@ -93,6 +94,9 @@ class FlowDef:
         return None
 
     def pricing_kwargs(self, draft: dict[str, Any]) -> dict[str, Any]:
+        return {}
+
+    def step1_context(self, draft: dict[str, Any]) -> dict[str, Any]:
         return {}
 
     def default_travellers(self, draft: dict[str, Any]) -> list[dict[str, Any]]:

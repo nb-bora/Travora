@@ -1,0 +1,20 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block flow_body %}
+<section class="card" aria-labelledby="v-t">
+  <div class="section-row"><h2 id="v-t">Voyageurs</h2></div>
+  {% include "web/flow/_travellers.html" with mode_word_article="un voyageur" wide_fields="name" fields_class="tf-train" %}
+  <p class="field-hint">La pièce d'identité peut être demandée au contrôle : le nom doit lui correspondre exactement.</p>
+</section>
+
+<section class="card seat-card seat-card-wide" aria-labelledby="s-t">
+  <div class="section-row"><h2 id="s-t">Voiture <span id="car-title">{{ car_number }}</span></h2><span class="muted">Sens de la marche →</span></div>
+  <div class="car-map" role="group" aria-label="Plan de la voiture">
+    {% for cell in seat_map %}<span class="seat{% if cell.chosen %} seat-chosen{% endif %}" title="Place {{ cell.n }}{% if cell.chosen %} : votre voyageur{% endif %}">{{ cell.n }}</span>{% endfor %}
+  </div>
+  <ul class="legend legend-row">
+    <li><span class="seat seat-chosen" aria-hidden="true"></span> Votre voyageur</li>
+    <li><span class="seat" aria-hidden="true"></span> Libre</li>
+  </ul>
+</section>
+{% endblock %}

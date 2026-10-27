@@ -1,0 +1,10 @@
+{% include "web/flow/_ticket.html" %}
+<section class="card" aria-labelledby="chg-t">
+  <h2 id="chg-t" class="card-title">Changer ou annuler</h2>
+  <p class="muted">Les conditions de changement dépendent de l'opérateur. L'agence les note une fois pour toutes.</p>
+  <ul class="option-list">
+    {% for option in change_options %}
+    <li><div><strong>{{ option.title }}</strong><div class="muted">{{ option.text }}</div></div><span class="badge badge-{{ option.tone }}">{{ option.tag }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
