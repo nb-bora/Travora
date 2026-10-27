@@ -49,6 +49,7 @@ a:hover { text-decoration: underline; }
 .brand:hover { text-decoration: none; }
 .brand-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--teal-400); display: flex; align-items: center; justify-content: center; }
 .brand-name { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+.nav-new { justify-content: flex-start; width: 100%; }
 .nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .nav a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius); color: #c9d5e6; font-weight: 500; text-decoration: none; transition: background var(--ease), color var(--ease); }
 .nav a:hover { background: rgba(255, 255, 255, .08); color: #fff; }

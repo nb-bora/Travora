@@ -1,17 +1,14 @@
 import uuid
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import cast
 from urllib.parse import quote
 from uuid import UUID
 
 from django.conf import settings
-from django.contrib.auth.views import redirect_to_login
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.cache import patch_cache_control
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from apps.cases.constants import CaseStatus, LineKind
@@ -24,40 +21,10 @@ from apps.dashboard.services.public import DashboardService
 from apps.payments.constants import PaymentMethod
 from apps.payments.services.public import PaymentsService
 from apps.shared_kernel.actor import Actor
-from apps.tenancy.middleware import TenantRequest
 from apps.tenancy.services.public import TenancyService
+from apps.web.access import _actor, agency_required
 from apps.web.errors import attempt
 from apps.web.forms import CaseForm, LineForm, PaymentForm, QuickEntryForm
-
-
-class NoAgency(Exception):
-    """Authentifié mais sans agence active (aucune appartenance, ou agence suspendue)."""
-
-
-def _actor(request: HttpRequest) -> Actor:
-    actor = cast(TenantRequest, request).actor
-    if actor is None:
-        raise NoAgency
-    return actor
-
-
-def agency_required(view):  # type: ignore[no-untyped-def]
-    """Exige un utilisateur connecté avec une agence active ; sinon redirige ou explique."""
-
-    def wrapper(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
-        if not request.user.is_authenticated:
-            # Après une session expirée, un POST ne se rejoue pas : on repart de l'accueil.
-            target = request.get_full_path() if request.method in ("GET", "HEAD") else "/"
-            return redirect_to_login(target)
-        try:
-            response = view(request, *args, **kwargs)
-        except NoAgency:
-            response = render(request, "web/no_agency.html", status=403)
-        patch_cache_control(response, no_store=True, private=True)
-        return response
-
-    wrapper.__name__ = view.__name__
-    return wrapper
 
 
 def _today_context(actor: Actor, quick_form: QuickEntryForm | None = None) -> dict[str, object]:

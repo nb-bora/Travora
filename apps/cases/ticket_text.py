@@ -32,6 +32,8 @@ BOOKING_REF = re.compile(
 )
 
 ROUTE_ARROW = re.compile(r"\b([A-Z]{3})\b *(?:→|->|–|—|-|/|\bTO\b|\bÀ\b) *\b([A-Z]{3})\b")
+# « DLA 20NOV 09:15 → CDG » : jusqu'à trois jetons (date, heure) entre le code et la flèche.
+ROUTE_LOOSE = re.compile(r"\b([A-Z]{3})\b(?: [0-9A-Z:.]{1,8}){0,3} *(?:→|->|–|—) *\b([A-Z]{3})\b")
 ROUTE_PAREN = re.compile(r"\(([A-Z]{3})\)")
 
 MONTHS = {
@@ -42,6 +44,7 @@ MONTHS = {
 DATE_TEXT = re.compile(r"\b([0-9]{1,2}) ?([A-Za-zéÉûÛ]{3,4})\.?(?: ?([0-9]{4}))?\b")
 DATE_NUMERIC = re.compile(r"\b([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})\b")
 DATE_ISO = re.compile(r"\b([0-9]{4})-([0-9]{2})-([0-9]{2})\b")
+TIME = re.compile(r"(?<![0-9:])([01]?[0-9]|2[0-3]):([0-5][0-9])(?![0-9:])")
 ISSUE_WORDS = re.compile(r"issu|[ée]mis|[ée]mission|date of issue", re.IGNORECASE)
 
 AMOUNT = r"([0-9][0-9 .  ]{0,15}[0-9])"
@@ -101,9 +104,10 @@ def _passengers(text: str) -> list[str]:
 
 
 def _route(text: str) -> tuple[str, str]:
-    for arrow in ROUTE_ARROW.finditer(text):
-        if not ({arrow.group(1), arrow.group(2)} & NOT_AIRPORTS):
-            return arrow.group(1), arrow.group(2)
+    for pattern in (ROUTE_ARROW, ROUTE_LOOSE):
+        for arrow in pattern.finditer(text):
+            if not ({arrow.group(1), arrow.group(2)} & NOT_AIRPORTS):
+                return arrow.group(1), arrow.group(2)
     codes: list[str] = []
     for code in ROUTE_PAREN.findall(text):
         if code not in codes and code not in NOT_AIRPORTS:
@@ -157,6 +161,19 @@ def _dates(text: str, today: date) -> tuple[date | None, bool]:
     return None, False
 
 
+def _times(text: str) -> tuple[str, str]:
+    """Heure de départ et d'arrivée : les deux premières heures hors lignes d'émission."""
+    found: list[str] = []
+    for line in text.splitlines():
+        if ISSUE_WORDS.search(line):
+            continue
+        for hours, minutes in TIME.findall(line):
+            stamp = f"{int(hours):02d}:{minutes}"
+            if stamp not in found:
+                found.append(stamp)
+    return (found[0] if found else ""), (found[1] if len(found) > 1 else "")
+
+
 def _price(text: str) -> int | None:
     for pattern in (PRICE_BEFORE, PRICE_AFTER):
         match = pattern.search(text)
@@ -182,6 +199,7 @@ def parse_booking_text(text: str, today: date) -> TicketProposal:
     passengers = _passengers(text)
     origin, destination = _route(text)
     departure, year_guessed = _dates(text, today)
+    departure_time, arrival_time = _times(text)
     booking = BOOKING_REF.search(text)
     warnings: list[str] = []
     if len(numbers) > 1:
@@ -208,6 +226,8 @@ def parse_booking_text(text: str, today: date) -> TicketProposal:
         origin=origin,
         destination=destination,
         departure_date=departure,
+        departure_time=departure_time,
+        arrival_time=arrival_time,
         carrier=_carrier(text),
         booking_reference=booking.group(1).upper() if booking else "",
         price_xaf=price,

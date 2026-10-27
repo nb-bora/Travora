@@ -1,0 +1,14 @@
+{% load web_extras %}
+<section class="card" aria-labelledby="tickets-t">
+  <h2 id="tickets-t" class="card-title">Billets émis</h2>
+  <ul class="ticket-list">
+    {% for line in lines %}
+    <li>
+      <span class="kind"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ line.kind|kind_icon }}"/></svg>
+        <span><strong>{{ line.passenger_name }}</strong><small>{{ line.label }}{% if line.carrier %} · {{ line.carrier }}{% endif %}</small></span></span>
+      <span class="tabular strong">{{ line.ticket_number|slice:":3" }} {{ line.ticket_number|slice:"3:" }}</span>
+      {% if line.issued_on %}<span class="badge badge-success">✓ Émis</span>{% else %}<span class="badge badge-neutral">Brouillon</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>

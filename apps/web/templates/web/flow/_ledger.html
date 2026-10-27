@@ -1,0 +1,18 @@
+{% load web_extras %}
+<section class="card" aria-labelledby="led-t">
+  <div class="section-row"><h2 id="led-t">Ce qui sera enregistré</h2><span class="badge badge-neutral">Écriture comptable</span></div>
+  {% if is_manager %}
+  <table>
+    <caption class="sr-only">Écriture de vente</caption>
+    <thead><tr><th scope="col">Compte</th><th scope="col" class="num">Débit</th><th scope="col" class="num">Crédit</th></tr></thead>
+    <tbody>
+      {% for row in ledger %}
+      <tr><td>{{ row.account }}</td><td class="num">{% if row.debit %}{{ row.debit|xaf }}{% endif %}</td><td class="num">{% if row.credit %}{{ row.credit|xaf }}{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="flush">La vente de <strong>{{ totals.price_xaf|xaf }}</strong> sera enregistrée au compte du client. Le détail comptable est réservé au gérant.</p>
+  {% endif %}
+  <p class="field-hint">Une ligne émise ne se modifie plus. Une erreur se corrige par une annulation, jamais par une suppression.</p>
+</section>

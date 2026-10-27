@@ -119,3 +119,15 @@ def test_hostile_pasted_text_is_read_in_bounded_time() -> None:
 
 def test_an_absurd_amount_is_ignored_not_crashing() -> None:
     assert parse("Fare : XAF " + "9" * 14).price_xaf is None
+
+
+def test_dates_and_times_between_the_codes_do_not_hide_the_route() -> None:
+    proposal = parse("DLA 20NOV 09:15 → CDG 20NOV 15:40")
+    assert (proposal.origin, proposal.destination) == ("DLA", "CDG")
+    assert (proposal.departure_time, proposal.arrival_time) == ("09:15", "15:40")
+
+
+def test_the_issue_time_is_not_taken_for_the_departure_time() -> None:
+    proposal = parse("Issued : 03 NOV 2026 08:00\nDeparture : 20 NOV 2026 09:15")
+    assert proposal.departure_time == "09:15"
+    assert proposal.arrival_time == ""

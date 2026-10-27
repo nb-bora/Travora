@@ -1,0 +1,42 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block form_open %}<div class="flow-form">{% endblock %}
+{% block form_close %}</div>{% endblock %}
+{% block flow_body %}
+<div class="done-banner" role="status">
+  <span class="done-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>
+  <div class="done-text">
+    <strong>{{ banner_title }}</strong>
+    <span>{% if due %}Solde restant {{ due|xaf }} · le dossier reste ouvert{% else %}Dossier soldé · {{ paid|xaf }} encaissés{% endif %}</span>
+  </div>
+  <a href="{{ case_url }}" class="done-link">Corriger</a>
+</div>
+
+{% include done_partial %}
+
+<section class="card" aria-labelledby="msg-t">
+  <div class="section-row"><h2 id="msg-t">Message pour {{ customer.name|first_word }}</h2><span class="muted">Vous l'envoyez depuis WhatsApp</span></div>
+  <div class="bubble" id="message-text">{{ message }}</div>
+  <div class="actions">
+    {% if whatsapp %}<a class="btn btn-primary" href="{{ whatsapp }}" target="_blank" rel="noopener noreferrer">Ouvrir WhatsApp</a>
+    {% else %}<span class="muted">Ajoutez le téléphone du client pour ouvrir WhatsApp.</span>{% endif %}
+    <button class="btn btn-secondary" type="button" data-copy="message-text">Copier le message</button>
+    <button class="btn btn-secondary" type="button" data-print>Imprimer</button>
+  </div>
+</section>
+
+{% if next_cards %}
+<section class="next-grid" aria-label="Et ensuite">
+  {% for card in next_cards %}
+  <article class="card"><strong>{{ card.title }}</strong><p class="muted flush">{{ card.text }}</p><span class="badge badge-{{ card.tone }}">{{ card.tag }}</span></article>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
+{% block foot %}
+<footer class="flow-foot">
+  <a class="btn btn-ghost" href="{% url 'web:flow_chooser' %}">Nouveau dossier</a>
+  <span class="flow-total"></span>
+  <a class="btn btn-primary btn-lg" href="{{ case_url }}">{{ cta }}</a>
+</footer>
+{% endblock %}

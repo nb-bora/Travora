@@ -9,7 +9,8 @@
   <title>{% block title %}Travora{% endblock %}</title>
   <link rel="icon" href="{% static 'web/favicon.svg' %}" type="image/svg+xml">
   <link rel="preload" href="{% static 'web/fonts/inter-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="{% static 'web/travora.css' %}?v=5">
+  <link rel="stylesheet" href="{% static 'web/travora.css' %}?v=7">
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
   <a class="skip" href="#main">Aller au contenu</a>
@@ -21,6 +22,9 @@
         <span class="brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B1F3A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l7-12 4 7 3-4 4 9z"/></svg></span>
         <span class="brand-name">Travora</span>
       </a>
+      <a class="btn btn-primary nav-new" href="{% url 'web:flow_chooser' %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Nouveau dossier</a>
       <ul class="nav">
         <li><a href="{% url 'web:today' %}"{% if url_name == 'today' %} aria-current="page"{% endif %}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg>

@@ -1,0 +1,26 @@
+{% extends "web/base.html" %}
+{% load web_extras %}
+{% block title %}Nouveau dossier · Travora{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Nouveau dossier</h1>
+    <p class="muted">Choisissez le mode de transport : le parcours guide chaque étape, du voyage au billet remis.</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'web:today' %}">Saisie rapide</a>
+</header>
+
+<section class="mode-grid" aria-label="Modes de transport">
+  {% for card in cards %}
+  <article class="card mode-card">
+    <span class="flow-mode" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ card.mode.kind|kind_icon }}"/></svg></span>
+    <h2>{{ card.mode.label }}</h2>
+    <p class="muted">{{ card.mode.steps|join:" · " }}</p>
+    <div class="actions">
+      <a class="btn btn-primary" href="{% url 'web:flow_start' card.mode.slug %}">Commencer</a>
+      {% if card.draft %}<a class="btn btn-secondary" href="{% url 'web:flow_start' card.mode.slug %}?reprendre=1">Reprendre le brouillon</a>{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

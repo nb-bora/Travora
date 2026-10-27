@@ -40,6 +40,7 @@ class CaseLine(TenantScopedModel):
     label = models.CharField(max_length=200)
     passenger_name = models.CharField(max_length=200, blank=True)
     carrier = models.CharField(max_length=120, blank=True)
+    details = models.JSONField(default=dict, blank=True)
     ticket_number = models.CharField(max_length=32, blank=True)
     price_xaf = models.BigIntegerField()
     cost_xaf = models.BigIntegerField(null=True, blank=True)
