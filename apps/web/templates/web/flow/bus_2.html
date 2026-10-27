@@ -1,0 +1,27 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block flow_body %}
+<div class="two-col">
+  <section class="card" aria-labelledby="tr-t">
+    <div class="section-row"><h2 id="tr-t">Voyageurs</h2><span class="badge badge-info" id="seat-count" data-total="{{ formset.total_form_count }}">{{ chosen_count }} sur {{ formset.total_form_count }} place{{ formset.total_form_count|pluralize }}</span></div>
+    {% include "web/flow/_travellers.html" with mode_word_article="un voyageur" wide_fields="name" fields_class="tf-bus" %}
+    <p class="field-hint">{{ bag_note }}</p>
+  </section>
+
+  <section class="card seat-card" aria-labelledby="map-t">
+    <h2 id="map-t" class="card-title">Plan du car</h2>
+    <p class="muted seat-driver"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v4M4 12h4"/></svg> Chauffeur</p>
+    <div class="seat-map" role="group" aria-label="Places du car">
+      {% for cell in seat_map %}
+        {% if cell.gap %}<span class="seat-gap" aria-hidden="true"></span>
+        {% else %}<span class="seat{% if cell.chosen %} seat-chosen{% endif %}" title="Place {{ cell.n }}{% if cell.chosen %} : votre voyageur{% endif %}">{{ cell.n }}</span>{% endif %}
+      {% endfor %}
+    </div>
+    <ul class="legend">
+      <li><span class="seat seat-chosen" aria-hidden="true"></span> Vos voyageurs</li>
+      <li><span class="seat" aria-hidden="true"></span> Libre</li>
+    </ul>
+    <p class="field-hint">Les places déjà vendues par d'autres canaux ne sont pas connues : la confirmation du transporteur fait foi.</p>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{# Billet à talon : trajet, faits, code et places/voiture. #}
+<section class="ticket" aria-labelledby="tk-t">
+  <div class="ticket-main">
+    <div class="ticket-band"><h2 id="tk-t">{{ ticket.title }}</h2></div>
+    <div class="ticket-body">
+      <div class="ticket-route">
+        <div><span class="muted">Départ</span><strong>{{ ticket.from|default:"—" }}</strong></div>
+        <svg width="28" height="14" viewBox="0 0 28 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h24M20 2l6 5-6 5"/></svg>
+        <div><span class="muted">Arrivée</span><strong>{{ ticket.to|default:"—" }}</strong></div>
+      </div>
+      <dl class="ticket-facts">
+        {% for key, value in ticket.facts %}<div><dt>{{ key }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+      </dl>
+    </div>
+  </div>
+  <div class="ticket-stub">
+    <span class="muted">{{ ticket.stub_label|default:"Code de voyage" }}</span>
+    <strong class="ticket-code">{{ ticket.code|default:"—" }}</strong>
+    <span class="muted">{{ ticket.seats_label|default:"Places" }}</span>
+    <div class="ticket-seats">{% for seat in ticket.seats %}<span class="badge badge-info">{{ seat }}</span>{% endfor %}</div>
+    <span class="muted ticket-note">{{ ticket.note|default:"Présentez le code au contrôle" }}</span>
+  </div>
+</section>

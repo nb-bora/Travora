@@ -1,0 +1,31 @@
+{% extends "web/flow/layout.html" %}
+{% load web_extras %}
+{% block cta_action %}confirm{% endblock %}
+{% block default_action %}confirm{% endblock %}
+{% block total_attrs %}{% if extra_bags %} data-terms="{{ seat_total }} + id_bag_price_xaf*{{ extra_bags }}"{% endif %}{% endblock %}
+{% block flow_body %}
+{% include "web/flow/_price_table.html" with live_total=live_total %}
+
+<section class="card" aria-labelledby="cost-t">
+  <h2 id="cost-t" class="card-title">Coût d'achat</h2>
+  <p class="muted flush">Ce que l'agence paie au transporteur. Saisissable par tous, lisible par le gérant seulement.</p>
+  <div class="grid-2 cost-row">
+    {% include "web/_field.html" with field=pricing_form.cost_per_seat_xaf %}
+    {% if pricing_form.bag_price_xaf %}
+      {% include "web/_field.html" with field=pricing_form.bag_price_xaf %}
+      {% include "web/_field.html" with field=pricing_form.cost_bag_xaf %}
+    {% endif %}
+  </div>
+  {% if is_manager %}
+  <div class="callout callout-row">
+    <div><span class="muted">Coût total</span><strong data-terms="id_cost_per_seat_xaf*{{ draft.travellers|length }}{% if pricing_form.bag_price_xaf %} + id_cost_bag_xaf*{{ extra_bags }}{% endif %}"></strong></div>
+    <div><span class="muted">Marge prévue (gérant)</span><strong data-terms="{{ seat_total }}{% if pricing_form.bag_price_xaf %} + id_bag_price_xaf*{{ extra_bags }}{% endif %} - id_cost_per_seat_xaf*{{ draft.travellers|length }}{% if pricing_form.bag_price_xaf %} - id_cost_bag_xaf*{{ extra_bags }}{% endif %}"></strong></div>
+  </div>
+  {% endif %}
+</section>
+
+{% include "web/flow/_checks.html" with title="Avant de confirmer la vente" %}
+{% if specs %}{% include "web/flow/_ledger.html" %}{% else %}
+<p class="field-hint">La vente est enregistrée au compte du client. Elle ne se modifie plus ; une erreur se corrige par une annulation.</p>
+{% endif %}
+{% endblock %}

@@ -292,3 +292,146 @@ def test_the_payment_page_refuses_a_bad_payment_and_keeps_the_input(
     skip = manager.post(pay_url, {"action": "skip"})
     assert skip.status_code == 302
     assert skip["Location"].endswith("/remise/")
+
+
+def bus_trip(**overrides: str) -> dict[str, str]:
+    day = (timezone.localdate() + timedelta(days=20)).isoformat()
+    return {
+        "action": "next",
+        "origin": "Douala",
+        "destination": "Yaoundé",
+        "departure_date": day,
+        "departure_time": "08:00",
+        "carrier": "Transporteur B",
+        "station": "Agence centre",
+        "service_class": "vip",
+        "seats": "3",
+        "price_per_seat": "9500",
+        "trip_code": "kb-8f3a21",
+        "seats_confirmed": "on",
+        "customer_name": "Alain Kamga",
+        "customer_phone": "+237 699 11 22 33",
+    } | overrides
+
+
+def bus_travellers(**overrides: str) -> dict[str, str]:
+    data = {
+        "action": "next",
+        "form-TOTAL_FORMS": "3",
+        "form-INITIAL_FORMS": "0",
+        "form-MIN_NUM_FORMS": "0",
+        "form-MAX_NUM_FORMS": "9",
+    }
+    people = [("Alain Kamga", "12", "1"), ("Sophie Kamga", "13", "1"), ("Junior Kamga", "14", "2")]
+    for index, (name, seat, bags) in enumerate(people):
+        data[f"form-{index}-name"] = name
+        data[f"form-{index}-traveller_phone"] = "+237 699 11 22 33" if index == 0 else ""
+        data[f"form-{index}-seat"] = seat
+        data[f"form-{index}-bags"] = bags
+    return data | overrides
+
+
+def test_a_complete_bus_flow_with_an_extra_bag(agency_a: AgencyFixture) -> None:
+    manager = login("alpha-manager")
+    manager.get(reverse("web:flow_start", kwargs={"mode": "bus"}))
+    assert manager.post(step("bus", 1), bus_trip()).status_code == 302
+    second = manager.get(step("bus", 2)).content.decode()
+    assert second.count('name="form-') >= 3  # une ligne par place annoncée
+    assert "Plan du car" in second
+    assert manager.post(step("bus", 2), bus_travellers()).status_code == 302
+
+    third = manager.get(step("bus", 3)).content.decode()
+    assert "Bagage supplémentaire" in third
+    assert 'name="bag_price_xaf"' in third
+    confirmed = manager.post(
+        step("bus", 3),
+        {
+            "action": "confirm",
+            "cost_per_seat_xaf": "8500",
+            "bag_price_xaf": "2000",
+            "cost_bag_xaf": "1500",
+        },
+    )
+    assert confirmed.status_code == 302
+
+    with TenancyService.scope(agency_a.id):
+        case = CasesService.list_cases(agency_a.manager)[0]
+        detail = CasesService.get_case(agency_a.manager, case.id)
+    assert case.price_total_xaf == 3 * 9_500 + 2_000
+    assert case.recognized_margin_xaf == 3 * 1_000 + 500
+    assert len(detail.lines) == 4
+    assert detail.lines[0].details["seat"] == "12"
+    assert detail.lines[0].details["booking_reference"] == "KB8F3A21"
+
+    done = manager.get(confirmed["Location"].replace("/paiement/", "/remise/")).content.decode()
+    assert "Billet de voyage · Bus VIP" in done
+    assert "KB8F3A21" in done
+    assert "Agence centre" in done
+    assert "https://wa.me/237699112233" in done
+
+
+def test_the_bus_flow_requires_the_seats_to_be_confirmed(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.get(reverse("web:flow_start", kwargs={"mode": "bus"}))
+    data = bus_trip()
+    del data["seats_confirmed"]
+    response = client.post(step("bus", 1), data)
+    assert response.status_code == 422
+    assert "Confirmez les places" in response.content.decode()
+
+
+def test_two_travellers_cannot_share_a_seat(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.get(reverse("web:flow_start", kwargs={"mode": "bus"}))
+    client.post(step("bus", 1), bus_trip())
+    response = client.post(step("bus", 2), bus_travellers(**{"form-1-seat": "12"}))
+    assert response.status_code == 422
+    assert "saisi deux fois" in response.content.decode()
+    bad = client.post(step("bus", 2), bus_travellers(**{"form-1-seat": "abc"}))
+    assert "entre 1 et 99" in bad.content.decode()
+
+
+def test_without_extra_bags_the_bag_fields_disappear(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.get(reverse("web:flow_start", kwargs={"mode": "bus"}))
+    client.post(step("bus", 1), bus_trip())
+    client.post(step("bus", 2), bus_travellers(**{"form-2-bags": "1"}))
+    page = client.get(step("bus", 3)).content.decode()
+    assert 'name="bag_price_xaf"' not in page
+    assert (
+        client.post(step("bus", 3), {"action": "confirm", "cost_per_seat_xaf": "8500"}).status_code
+        == 302
+    )
+
+
+def test_the_seat_map_highlights_the_chosen_seats(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.get(reverse("web:flow_start", kwargs={"mode": "bus"}))
+    client.post(step("bus", 1), bus_trip())
+    client.post(step("bus", 2), bus_travellers())
+    page = client.get(step("bus", 2)).content.decode()
+    assert page.count("seat seat-chosen") >= 3
+    assert "3 sur 3 places" in page
+
+
+def test_an_agent_in_the_bus_flow_never_sees_margin_or_cost(agency_a: AgencyFixture) -> None:
+    agent = login("alpha-agent")
+    agent.get(reverse("web:flow_start", kwargs={"mode": "bus"}))
+    agent.post(step("bus", 1), bus_trip())
+    agent.post(step("bus", 2), bus_travellers())
+    third = agent.get(step("bus", 3)).content.decode()
+    assert "Marge" not in third
+    assert "Fournisseur" not in third
+    agent.post(
+        step("bus", 3),
+        {
+            "action": "confirm",
+            "cost_per_seat_xaf": "8500",
+            "bag_price_xaf": "2000",
+            "cost_bag_xaf": "1500",
+        },
+    )
+    with TenancyService.scope(agency_a.id):
+        case = CasesService.list_cases(agency_a.agent)[0]
+    assert case.cost_total_xaf is None
+    assert case.expected_margin_xaf is None

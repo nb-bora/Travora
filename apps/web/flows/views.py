@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods
 
+from apps.cases.constants import TICKET_KINDS
 from apps.cases.dto import CaseDetail
 from apps.cases.exceptions import CaseNotFound, InvalidLine
 from apps.cases.services.public import CasesService
@@ -267,6 +268,7 @@ def _traveller_context(
         footer_total=flow.step2_total(draft),
         formset=formset,
         draft=draft,
+        **flow.aside(formset),
         **extra_forms,
         **more,
     )
@@ -310,7 +312,7 @@ def _step_travellers(
             _traveller_context(flow, draft, formset, side, missing=missing),
             status=422,
         )
-    initial = draft["travellers"] or [{}]
+    initial = draft["travellers"] or flow.default_travellers(draft)
     formset = formset_class(initial=initial)
     side = flow.side_forms(None, draft, bound=False)
     return render(
@@ -368,8 +370,9 @@ def _render_confirm(
         pricing_form=pricing_form,
         totals=totals,
         specs=specs,
-        checks=flow.checks(draft) if draft["pricing"] else [],
+        checks=flow.checks(draft),
         ledger=flow.ledger(draft) if draft["pricing"] else [],
+        price_rows=flow.price_lines(draft),
         is_manager=actor.can_view_financials,
         **flow.confirm_context(draft),
     )
@@ -539,7 +542,7 @@ def flow_pay(request: HttpRequest, case_id: UUID) -> HttpResponse:
 
 
 def _banner(lines: list[Any], paid: int) -> str:
-    issued = sum(1 for line in lines if line.issued_on is not None)
+    issued = sum(1 for line in lines if line.issued_on is not None and line.kind in TICKET_KINDS)
     title = f"{issued} billet{'s' if issued > 1 else ''} émis" if issued else "Dossier créé"
     if paid > 0:
         title += " · " + f"{paid:,}".replace(",", "\u202f") + "\u00a0FCFA encaissés"

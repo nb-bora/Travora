@@ -157,3 +157,48 @@ progress.meter::-moz-progress-bar { background: #b45309; border-radius: 999px; }
 /* La monnaie à rendre ne concerne que les espèces. */
 .cash-box { display: none; }
 .card:has(.method input[value="cash"]:checked) .cash-box { display: block; }
+
+/* Bus : voyageurs et plan du car */
+.two-col { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.two-col > :first-child { flex: 1 1 420px; min-width: 0; }
+.seat-card { flex: 0 0 240px; }
+.seat-driver { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin: 0 0 8px; font-size: 12px; }
+.seat-map { display: grid; grid-template-columns: repeat(2, 34px) 16px repeat(2, 34px); gap: 6px; justify-content: center; border: 1px solid var(--border); border-radius: 14px; padding: 10px 8px; background: var(--bg); }
+.seat { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text-2); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.seat-chosen { background: var(--teal); border-color: var(--teal); color: #fff; }
+@media (prefers-color-scheme: dark) { .seat-chosen { color: #0b1220; } }
+.seat-gap { width: 16px; }
+.legend { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 12px; color: var(--text-2); }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.legend .seat { width: 14px; height: 14px; border-radius: 4px; }
+
+/* Avertissement, case à cocher, ligne de total */
+.notice { display: flex; gap: 14px; align-items: flex-start; border-radius: 14px; padding: 14px 16px; }
+.notice p { margin: 2px 0 8px; font-size: 13px; }
+.notice-warning { background: var(--warning-bg); border: 1px solid #fcd34d; color: var(--warning); }
+.check-line { display: flex; align-items: center; gap: 10px; font-weight: 500; color: inherit; font-size: 14px; }
+.check-line input { width: 18px; height: 18px; accent-color: var(--teal); }
+.callout-row { flex-direction: row; gap: 28px; flex-wrap: wrap; margin-top: 12px; }
+.callout-row > div { display: flex; flex-direction: column; gap: 2px; }
+.total-row th, .total-row td { border-top: 2px solid var(--text); padding-top: 12px; font-size: 16px; }
+
+/* Billet à talon */
+.ticket { display: flex; border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-pop); }
+.ticket-main { flex: 1; min-width: 0; }
+.ticket-band { background: var(--navy); color: #fff; padding: 12px 20px; }
+.ticket-band h2 { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
+.ticket-body { padding: 18px 20px; display: grid; gap: 16px; }
+.ticket-route { display: flex; align-items: center; gap: 14px; }
+.ticket-route > div { display: flex; flex-direction: column; }
+.ticket-route strong { font-size: 22px; letter-spacing: -0.02em; }
+.ticket-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.ticket-facts dt { font-size: 12px; color: var(--text-2); }
+.ticket-facts dd { margin: 0; font-weight: 600; }
+.ticket-stub { flex: 0 0 200px; border-left: 2px dashed var(--border-strong); padding: 18px 16px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+.ticket-code { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 20px; letter-spacing: .04em; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; text-align: center; overflow-wrap: anywhere; }
+.ticket-seats { display: flex; gap: 6px; flex-wrap: wrap; }
+.ticket-note { margin-top: auto; font-size: 12px; }
+@media (max-width: 767px) { .ticket { flex-direction: column; } .ticket-stub { border-left: 0; border-top: 2px dashed var(--border-strong); flex-basis: auto; } .ticket-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.traveller-fields.tf-bus { grid-template-columns: minmax(0, 1fr) 92px 92px; }
+.traveller-fields.tf-bus .field-wide { grid-column: 1 / -1; }
