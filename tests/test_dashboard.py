@@ -3,7 +3,6 @@ from datetime import date, timedelta
 from uuid import UUID
 
 import pytest
-from pytest_django.fixtures import SettingsWrapper
 
 from apps.cases.constants import LineKind
 from apps.cases.services.public import CasesService
@@ -85,7 +84,7 @@ def test_an_agent_sees_no_margin_but_the_same_balances(scoped: AgencyFixture) ->
 
 
 def test_an_unpaid_balance_raises_an_alert_after_the_threshold(
-    scoped: AgencyFixture, settings: SettingsWrapper
+    scoped: AgencyFixture, settings
 ) -> None:
     settings.OVERDUE_DAYS = 14
     late = make_case(scoped, sold_on=TODAY - timedelta(days=15), name="Retard")
@@ -98,9 +97,7 @@ def test_an_unpaid_balance_raises_an_alert_after_the_threshold(
     assert snapshot.at_risk_cases == 1
 
 
-def test_a_close_departure_with_a_balance_raises_an_alert(
-    scoped: AgencyFixture, settings: SettingsWrapper
-) -> None:
+def test_a_close_departure_with_a_balance_raises_an_alert(scoped: AgencyFixture, settings) -> None:
     settings.UPCOMING_DEPARTURE_DAYS = 7
     soon = make_case(scoped, departure=TODAY + timedelta(days=3), name="Bientôt")
     make_case(scoped, departure=TODAY + timedelta(days=3), paid=500_000, name="Payé")
@@ -112,9 +109,7 @@ def test_a_close_departure_with_a_balance_raises_an_alert(
     assert [(a.kind, a.case_id) for a in alerts] == [(AlertKind.DEPARTURE_SOON, soon)]
 
 
-def test_a_case_with_two_alerts_counts_once_as_at_risk(
-    scoped: AgencyFixture, settings: SettingsWrapper
-) -> None:
+def test_a_case_with_two_alerts_counts_once_as_at_risk(scoped: AgencyFixture, settings) -> None:
     settings.OVERDUE_DAYS = 14
     settings.UPCOMING_DEPARTURE_DAYS = 7
     make_case(scoped, sold_on=TODAY - timedelta(days=20), departure=TODAY + timedelta(days=2))
