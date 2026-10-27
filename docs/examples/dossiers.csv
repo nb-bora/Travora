@@ -1,0 +1,4 @@
+reference,customer_name,customer_phone,departure_date,kind,label,passenger_name,ticket_number,price_xaf,cost_xaf,paid_xaf,payment_method,payment_reference
+2026-0001,Marie Ndong,+237677123456,2026-11-20,air_ticket,DLA-CDG,NDONG/MARIE,0572345678901,500000,450000,200000,mobile_money,MP-123
+2026-0001,Marie Ndong,+237677123456,,free_service,Hôtel 2 nuits,,,180000,144000,,,
+2026-0002,Paul Eto,,,free_service,Transfert,,,25000,20000,25000,cash,
