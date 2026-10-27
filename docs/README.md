@@ -21,6 +21,7 @@ Version 0.2, mise à jour le 27 octobre 2026. Ces documents sont des **hypothès
 | [13-catalogue-fournisseurs.md](13-catalogue-fournisseurs.md) | **Catalogue de tous les fournisseurs recensés**, par type de voyage (GDS, NDC, cars, trains, bateaux, hôtels, locations, assurances, paiement), avec leurs conditions d'accès et le niveau de preuve |
 | [adr/ADR-0002-registre-fournisseurs.md](adr/ADR-0002-registre-fournisseurs.md) | Décision : registre extensible de fournisseurs (fiches en données, adaptateurs par capacité, activation conditionnée au contrat) |
 | [12-plan-recentre-60-jours.md](12-plan-recentre-60-jours.md) | **Plan de référence pour les 60 prochains jours** : MVP réduit, refus explicites avec déclencheurs, ordre de construction, comment faire selon les documentations officielles |
+| [13-design-et-anticipation.md](13-design-et-anticipation.md) | **Interface et moteur d'anticipation** : design system, écrans, suggestions proposées puis confirmées, flux, spécifications Django + htmx, roadmap |
 
 Les registres générés `09` et `10` n'existent pas : le workflow de recherche a été arrêté. Le registre de référence est `08`.
 
