@@ -50,3 +50,52 @@ class PaymentForm(forms.Form):
         super().__init__(*args, **kwargs)  # type: ignore[arg-type]
         self.fields["received_on"].initial = timezone.localdate
         self.fields["idempotency_key"].initial = lambda: uuid.uuid4().hex
+
+
+MODE_CHOICES = [
+    (LineKind.AIR_TICKET.value, "Avion"),
+    (LineKind.BUS_TICKET.value, "Bus"),
+    (LineKind.TRAIN_TICKET.value, "Train"),
+    (LineKind.BOAT_TICKET.value, "Bateau"),
+    (LineKind.FREE_SERVICE.value, "Prestation"),
+]
+
+
+class QuickEntryForm(forms.Form):
+    """Saisie rapide : client, dossier et première ligne en un seul geste."""
+
+    kind = forms.ChoiceField(
+        label="Mode",
+        choices=MODE_CHOICES,
+        initial=LineKind.AIR_TICKET.value,
+        widget=forms.RadioSelect,
+    )
+    origin = forms.CharField(label="Départ", max_length=80, required=False)
+    destination = forms.CharField(label="Arrivée", max_length=80, required=False)
+    service_label = forms.CharField(label="Prestation", max_length=200, required=False)
+    departure_date = forms.DateField(
+        label="Date de départ", required=False, widget=forms.DateInput(attrs={"type": "date"})
+    )
+    customer_name = forms.CharField(label="Client", max_length=200)
+    customer_phone = forms.CharField(label="Téléphone (+indicatif)", max_length=32, required=False)
+    passenger_name = forms.CharField(label="Passager", max_length=200, required=False)
+    carrier = forms.CharField(label="Transporteur", max_length=120, required=False)
+    ticket_number = forms.CharField(label="Numéro de billet", max_length=32, required=False)
+    price_xaf = _amount("Prix (FCFA)")
+    cost_xaf = _amount("Coût (FCFA)", required=False)
+
+    def clean(self) -> dict[str, object]:
+        data = super().clean() or {}
+        kind = data.get("kind")
+        if kind == LineKind.FREE_SERVICE.value:
+            if not data.get("service_label", "").strip():
+                self.add_error("service_label", "Décrivez la prestation.")
+            data["label"] = data.get("service_label", "").strip()
+        elif kind:
+            for name in ("origin", "destination"):
+                if not data.get(name, "").strip():
+                    self.add_error(name, "Ce champ est obligatoire.")
+            data["label"] = (
+                f"{data.get('origin', '').strip()} → {data.get('destination', '').strip()}"
+            )
+        return data

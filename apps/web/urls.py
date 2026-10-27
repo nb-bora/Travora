@@ -15,6 +15,7 @@ urlpatterns = [
         name="login",
     ),
     path("deconnexion/", auth_views.LogoutView.as_view(), name="logout"),
+    path("dossiers/rapide/", views.quick_entry, name="quick_entry"),
     path("dossiers/", views.case_list, name="case_list"),
     path("dossiers/nouveau/", views.case_create, name="case_create"),
     path("dossiers/<uuid:case_id>/", views.case_detail, name="case_detail"),
