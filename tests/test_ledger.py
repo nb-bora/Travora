@@ -6,6 +6,8 @@ import pytest
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, connection, transaction
 
+from apps.cases.services.public import CasesService
+from apps.crm.services.public import CrmService
 from apps.ledger.constants import Account, Direction, TransactionKind
 from apps.ledger.dto import PostingLine
 from apps.ledger.exceptions import (
@@ -24,15 +26,20 @@ from tests.conftest import AgencyFixture, runtime_role
 TODAY = date(2026, 10, 27)
 
 
-@pytest.fixture
-def case_id() -> uuid.UUID:
-    return uuid.uuid7()
+def new_case(agency: AgencyFixture) -> uuid.UUID:
+    customer = CrmService.find_or_create_customer(agency.agent, name="Client", phone="")
+    return CasesService.create_case(agency.agent, customer_id=customer.id)
 
 
 @pytest.fixture
 def scoped(agency_a: AgencyFixture) -> Iterator[AgencyFixture]:
     with TenancyService.scope(agency_a.id):
         yield agency_a
+
+
+@pytest.fixture
+def case_id(scoped: AgencyFixture) -> uuid.UUID:
+    return new_case(scoped)
 
 
 def sale(agency: AgencyFixture, case_id: uuid.UUID, price: int, cost: int, key: str = "s1"):
@@ -134,7 +141,7 @@ def test_the_service_refuses_malformed_entries(scoped: AgencyFixture, case_id: u
 def write_unbalanced_entry(agency: AgencyFixture) -> None:
     with TenancyService.scope(agency.id):
         entry = LedgerTransaction.objects.create(
-            case_id=uuid.uuid7(), kind=TransactionKind.SALE, occurred_on=TODAY
+            case_id=new_case(agency), kind=TransactionKind.SALE, occurred_on=TODAY
         )
         LedgerPosting.objects.create(
             transaction=entry, account=Account.CLIENT, direction=Direction.DEBIT, amount_xaf=100
@@ -251,13 +258,45 @@ def test_the_database_refuses_to_alter_a_posting_even_for_the_privileged_role(
         cursor.execute("UPDATE ledger_posting SET amount_xaf = amount_xaf + 1")
 
 
-def test_balances_never_cross_agencies(
-    agency_a: AgencyFixture, agency_b: AgencyFixture, case_id: uuid.UUID
-) -> None:
+def test_balances_never_cross_agencies(agency_a: AgencyFixture, agency_b: AgencyFixture) -> None:
     with TenancyService.scope(agency_b.id):
-        sale(agency_b, case_id, price=700_000, cost=500_000)
+        foreign_case = new_case(agency_b)
+        sale(agency_b, foreign_case, price=700_000, cost=500_000)
     with runtime_role(), TenancyService.scope(agency_a.id):
         assert LedgerService.balances_by_case(agency_a.agent) == {}
         assert LedgerService.margins_by_case(agency_a.manager) == {}
     with runtime_role(), TenancyService.scope(agency_b.id):
-        assert LedgerService.balances_by_case(agency_b.agent) == {case_id: 700_000}
+        assert LedgerService.balances_by_case(agency_b.agent) == {foreign_case: 700_000}
+
+
+def references(table: str) -> set[tuple[str, str]]:
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT kcu.column_name, ccu.table_name "
+            "FROM information_schema.table_constraints tc "
+            "JOIN information_schema.key_column_usage kcu "
+            "ON tc.constraint_name = kcu.constraint_name "
+            "JOIN information_schema.constraint_column_usage ccu "
+            "ON tc.constraint_name = ccu.constraint_name "
+            "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_name = %s",
+            [table],
+        )
+        return {(column, target) for column, target in cursor.fetchall()}
+
+
+def test_references_between_modules_are_real_foreign_keys(db: None) -> None:
+    assert ("case_id", "cases_case") in references("ledger_transaction")
+    assert ("sale_transaction_id", "ledger_transaction") in references("cases_line")
+    assert ("ledger_transaction_id", "ledger_transaction") in references("payments_payment")
+
+
+def test_an_entry_for_a_case_that_does_not_exist_is_refused(agency_a: AgencyFixture) -> None:
+    with pytest.raises(IntegrityError), TenancyService.scope(agency_a.id):
+        LedgerService.record_sale(
+            agency_a.agent,
+            case_id=uuid.uuid7(),
+            price_xaf=100,
+            cost_xaf=0,
+            occurred_on=TODAY,
+            idempotency_key="ghost",
+        )

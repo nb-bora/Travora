@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0002_rls'),
+        ("accounts", "0002_rls"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='membership',
-            options={'default_manager_name': 'objects'},
+            name="membership",
+            options={"default_manager_name": "objects"},
         ),
     ]
