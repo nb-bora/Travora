@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.quotes",
     "apps.concierge",
+    "apps.web",
 ]
 
 MIDDLEWARE = [
@@ -88,6 +89,9 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "web:login"
+LOGIN_REDIRECT_URL = "web:today"
+LOGOUT_REDIRECT_URL = "web:login"
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},

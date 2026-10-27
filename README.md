@@ -2,7 +2,7 @@
 
 Gestion opérationnelle et financière pour agences de voyages : dossiers, devis, paiements, soldes et marges, sans double saisie. Monolithe modulaire Django 6.1 sur PostgreSQL, multi-tenant avec isolation forcée par la base (RLS).
 
-État : le socle métier est complet et testé (agences, comptes, clients, dossiers, journal comptable, paiements, devis, tableau de bord, commandes du concierge). **L'interface web n'est pas encore construite** : le concierge utilise les commandes de gestion décrites plus bas. Voir [docs/architecture.md](docs/architecture.md).
+État : le socle métier est complet et testé (agences, comptes, clients, dossiers, journal comptable, paiements, devis, tableau de bord, commandes du concierge). **L'interface web n'en est qu'à son socle** (connexion, écran « Aujourd'hui » avec les chiffres du jour, conçus selon [docs/13](docs/13-design-et-anticipation.md)) : le concierge utilise les commandes de gestion décrites plus bas. Voir [docs/architecture.md](docs/architecture.md).
 
 ## Prérequis
 
