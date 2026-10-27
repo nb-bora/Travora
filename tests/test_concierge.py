@@ -160,3 +160,21 @@ def test_the_default_sale_date_is_today_in_the_agency_timezone(
         assert case_id is not None
         received = {p.received_on for p in PaymentsService.payments_for_case(actor, case_id)}
         assert received == {date(2030, 1, 2)}
+
+
+def test_a_suspended_agency_resolves_nobody_and_keeps_its_data(agency: str) -> None:
+    run("set_agency_status", "--user", "alice", "--suspend")
+    for username in ("alice", "bob"):
+        with pytest.raises(CommandError, match="aucune agence active"), actor_for(username):
+            pass
+
+    run("set_agency_status", "--user", "alice", "--activate")
+    with actor_for("alice") as actor:
+        assert actor.role is Role.MANAGER
+
+
+def test_suspending_twice_or_an_unknown_user_is_handled(agency: str) -> None:
+    run("set_agency_status", "--user", "alice", "--suspend")
+    run("set_agency_status", "--user", "alice", "--suspend")
+    with pytest.raises(CommandError, match="Utilisateur inconnu"):
+        run("set_agency_status", "--user", "personne", "--suspend")
