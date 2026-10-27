@@ -1,0 +1,26 @@
+{% load static %}<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Travora{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'web/travora.css' %}">
+</head>
+<body>
+  <a class="skip" href="#main">Aller au contenu</a>
+  {% block shell %}
+  <div class="shell">
+    <nav class="sidebar" aria-label="Navigation principale">
+      <a class="brand" href="{% url 'web:today' %}">Travora</a>
+      <ul>
+        <li><a href="{% url 'web:today' %}" aria-current="page">Aujourd'hui</a></li>
+      </ul>
+      <form method="post" action="{% url 'web:logout' %}" class="logout">
+        {% csrf_token %}<button class="btn btn-ghost" type="submit">Se déconnecter</button>
+      </form>
+    </nav>
+    <main id="main" class="main">{% block content %}{% endblock %}</main>
+  </div>
+  {% endblock %}
+</body>
+</html>

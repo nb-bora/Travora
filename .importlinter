@@ -8,6 +8,7 @@ include_external_packages = False
 name = Les applications respectent l'ordre des couches
 type = layers
 layers =
+    apps.web
     apps.concierge
     apps.dashboard
     apps.quotes
@@ -308,4 +309,37 @@ forbidden_modules =
     apps.quotes.selectors
     apps.quotes.services.commands
     apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:web-uses-facades-only]
+name = web n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.web
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+    apps.concierge.access
+    apps.concierge.csv_import
 allow_indirect_imports = True

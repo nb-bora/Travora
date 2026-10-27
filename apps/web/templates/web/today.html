@@ -1,0 +1,25 @@
+{% extends "web/base.html" %}
+{% load web_extras %}
+{% block title %}Aujourd'hui · Travora{% endblock %}
+{% block content %}
+<header class="page-head"><h1>Aujourd'hui</h1></header>
+
+<section class="stats" aria-label="Chiffres clés">
+  <article class="card stat"><p class="stat-label">Dossiers ouverts</p><p class="stat-value">{{ snapshot.open_cases }}</p></article>
+  <article class="card stat"><p class="stat-label">Créances</p><p class="stat-value">{{ snapshot.receivables_xaf|xaf }}</p></article>
+  {% if is_manager %}
+  <article class="card stat"><p class="stat-label">Marge encaissée</p><p class="stat-value">{{ snapshot.realized_margin_xaf|xaf }}</p></article>
+  {% endif %}
+  <article class="card stat"><p class="stat-label">Dossiers à risque</p><p class="stat-value">{{ snapshot.at_risk_cases }}</p></article>
+</section>
+
+<section aria-labelledby="alerts-title">
+  <h2 id="alerts-title">À surveiller</h2>
+  {% for alert in snapshot.alerts %}
+    <article class="card alert-row"><span class="badge badge-warning">{{ alert.kind.label }}</span>
+      <strong>{{ alert.reference }}</strong> <span class="muted">{{ alert.detail }}</span></article>
+  {% empty %}
+    <div class="card empty"><p><strong>Rien d'urgent.</strong></p><p class="muted">Aucun impayé en retard, aucun départ proche non soldé, aucun devis expiré.</p></div>
+  {% endfor %}
+</section>
+{% endblock %}
