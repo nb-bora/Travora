@@ -12,7 +12,7 @@ from django.db import DatabaseError, connection, transaction
 
 from apps.accounts.models import Membership
 from apps.audit.models import AuditEvent
-from apps.shared_kernel.models import TenantScopedModel
+from apps.shared_kernel.models import TenantManager, TenantScopedModel
 from apps.shared_kernel.tenant_context import (
     TenantContextMissing,
     TenantMismatch,
@@ -27,6 +27,12 @@ def tenant_tables() -> list[str]:
         model._meta.db_table for model in apps.get_models() if issubclass(model, TenantScopedModel)
     ]
     return [*tables, "tenancy_agency"]
+
+
+def test_every_tenant_model_defaults_to_the_agency_filtered_manager() -> None:
+    for model in apps.get_models():
+        if issubclass(model, TenantScopedModel):
+            assert isinstance(model._default_manager, TenantManager), model.__name__
 
 
 def scalar(sql: str, params: list[object] | None = None) -> object:
