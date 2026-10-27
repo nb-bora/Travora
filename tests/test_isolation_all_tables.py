@@ -10,10 +10,12 @@ import pytest
 from django.apps import apps
 from django.db import connection
 from django.db.models import Model
+from django.utils import timezone
 
 from apps.cases.constants import LineKind
 from apps.cases.services.public import CasesService
 from apps.crm.services.public import CrmService
+from apps.ledger.services.public import LedgerService
 from apps.payments.constants import PaymentMethod
 from apps.payments.services.public import PaymentsService
 from apps.quotes.services.public import QuotesService
@@ -22,7 +24,7 @@ from apps.tenancy.services.public import TenancyService
 from tests.conftest import AgencyFixture, runtime_role
 from tests.test_isolation import scalar, tenant_tables
 
-TODAY = date(2026, 10, 27)
+TODAY = timezone.localdate()
 
 
 def populate(agency: AgencyFixture) -> None:
@@ -50,6 +52,7 @@ def populate(agency: AgencyFixture) -> None:
             received_on=TODAY,
             idempotency_key="k1",
         )
+        LedgerService.close_period(agency.manager, closed_until=TODAY - timedelta(days=30))
         draft = QuotesService.create_draft(
             agency.agent, case_id=case_id, valid_until=date.today() + timedelta(days=10)
         )

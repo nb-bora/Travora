@@ -7,6 +7,7 @@ par les agents, qui encaissent.
 from datetime import date
 from uuid import UUID
 
+from apps.audit.services.public import AuditService
 from apps.ledger import selectors
 from apps.ledger.constants import Account
 from apps.ledger.dto import TransactionInfo
@@ -52,6 +53,23 @@ class LedgerService:
             created_by=actor.user_id,
             idempotency_key=idempotency_key,
         )
+
+    @staticmethod
+    def close_period(actor: Actor, *, closed_until: date) -> date:
+        actor.require_manager()
+        result = commands.close_period(closed_until=closed_until, closed_by=actor.user_id)
+        AuditService.record(
+            actor_user_id=actor.user_id,
+            action="period.closed",
+            object_type="agency",
+            object_id=actor.agency_id,
+            metadata={"closed_until": closed_until.isoformat()},
+        )
+        return result
+
+    @staticmethod
+    def closed_until(actor: Actor) -> date | None:
+        return selectors.closed_until()
 
     @staticmethod
     def reverse(actor: Actor, *, transaction_id: UUID, occurred_on: date) -> TransactionInfo:

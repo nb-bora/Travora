@@ -58,6 +58,8 @@ L'agence n'est **jamais** lue dans la requête (paramètre, en-tête, formulaire
 - **Montants strictement positifs** (contrainte `CHECK`).
 - **Contre-passation** : une erreur se corrige en écrivant l'écriture opposée, une seule fois par écriture (contrainte d'unicité) ; on ne contre-passe pas une contre-passation.
 - **Idempotence** : clé unique par agence ; rejouer renvoie l'écriture existante, et la réutiliser pour une autre écriture est refusé.
+- **Dates comptables bornées** : jamais dans le futur, jamais au-delà de `LEDGER_RETROACTIVITY_DAYS` jours (90 par défaut, décision métier à confirmer), jamais dans une **période clôturée**. La clôture est faite par le gérant (`close_period`), en ajout seul, et ne recule jamais ; une contre-passation d'une écriture ancienne se date dans la période ouverte.
+- **Agence suspendue** (`set_agency_status`) : plus aucun accès, aucune donnée supprimée ; réversible et auditée.
 - **Soldes et marges toujours dérivés** par agrégation des lignes, jamais stockés.
 
 ### Écritures

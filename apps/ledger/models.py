@@ -76,3 +76,18 @@ class LedgerPosting(AppendOnlyModel):
             models.Index(fields=["agency", "transaction"], name="ledger_posting_tx_idx"),
             models.Index(fields=["agency", "account"], name="ledger_posting_account_idx"),
         ]
+
+
+class PeriodClosure(AppendOnlyModel):
+    """Clôture de période : plus aucune écriture ne peut être datée jusqu'à ``closed_until``.
+
+    Ajout seul : l'historique des clôtures est conservé ; la plus récente date l'emporte.
+    """
+
+    closed_until = models.DateField()
+    closed_by = models.UUIDField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ledger_period_closure"
+        indexes = [models.Index(fields=["agency", "closed_until"], name="ledger_closure_idx")]

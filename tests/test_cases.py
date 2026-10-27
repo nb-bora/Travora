@@ -6,6 +6,7 @@ import pytest
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, connection, transaction
 from django.test.utils import CaptureQueriesContext
+from django.utils import timezone
 
 from apps.audit.services.public import AuditService
 from apps.cases.constants import CaseStatus, LineKind
@@ -27,7 +28,7 @@ from apps.payments.services.public import PaymentsService
 from apps.tenancy.services.public import TenancyService
 from tests.conftest import AgencyFixture, runtime_role
 
-TODAY = date(2026, 10, 27)
+TODAY = timezone.localdate()
 
 
 @pytest.fixture
