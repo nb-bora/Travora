@@ -4,7 +4,8 @@ from uuid import UUID
 
 import pytest
 from django.core.exceptions import PermissionDenied
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.test.utils import CaptureQueriesContext
 
 from apps.audit.services.public import AuditService
 from apps.cases.constants import CaseStatus, LineKind
@@ -21,6 +22,8 @@ from apps.cases.services.public import CasesService
 from apps.crm.services.public import CrmService
 from apps.ledger.constants import Account
 from apps.ledger.services.public import LedgerService
+from apps.payments.constants import PaymentMethod
+from apps.payments.services.public import PaymentsService
 from apps.tenancy.services.public import TenancyService
 from tests.conftest import AgencyFixture, runtime_role
 
@@ -315,3 +318,58 @@ def test_only_a_closed_case_can_be_reopened(scoped: AgencyFixture) -> None:
     CasesService.cancel_case(scoped.manager, case_id=cancelled, cancelled_on=TODAY)
     with pytest.raises(CaseNotClosed):
         CasesService.reopen_case(scoped.manager, case_id=cancelled)
+
+
+def case_row_locks(operation) -> int:
+    with CaptureQueriesContext(connection) as captured:
+        operation()
+    return sum(1 for q in captured if "FOR UPDATE" in q["sql"] and "cases_case" in q["sql"])
+
+
+def test_every_state_changing_operation_locks_the_case_row(scoped: AgencyFixture) -> None:
+    """Le verrou sérialise les opérations concurrentes sur un même dossier."""
+    case_id = new_case(scoped)
+    line = air_line(scoped, case_id)
+    extra = air_line(scoped, case_id, price=100_000, cost=80_000)
+
+    assert case_row_locks(lambda: air_line(scoped, case_id)) >= 1
+    assert (
+        case_row_locks(
+            lambda: CasesService.issue_line(scoped.agent, line_id=line.id, issued_on=TODAY)
+        )
+        >= 1
+    )
+    assert (
+        case_row_locks(
+            lambda: PaymentsService.record_payment(
+                scoped.agent,
+                case_id=case_id,
+                method=PaymentMethod.CASH,
+                amount_xaf=500_000,
+                received_on=TODAY,
+                idempotency_key="lock-1",
+            )
+        )
+        >= 1
+    )
+    assert (
+        case_row_locks(
+            lambda: CasesService.void_line(scoped.manager, line_id=extra.id, voided_on=TODAY)
+        )
+        >= 1
+    )
+    assert case_row_locks(lambda: CasesService.close_case(scoped.agent, case_id=case_id)) >= 1
+    assert case_row_locks(lambda: CasesService.reopen_case(scoped.manager, case_id=case_id)) >= 1
+    CasesService.void_line(scoped.manager, line_id=line.id, voided_on=TODAY)
+    assert (
+        case_row_locks(
+            lambda: CasesService.cancel_case(scoped.manager, case_id=case_id, cancelled_on=TODAY)
+        )
+        >= 1
+    )
+
+
+def test_reading_a_case_does_not_lock_it(scoped: AgencyFixture) -> None:
+    case_id = new_case(scoped)
+    assert case_row_locks(lambda: CasesService.get_case(scoped.agent, case_id)) == 0
+    assert case_row_locks(lambda: CasesService.list_cases(scoped.agent)) == 0
