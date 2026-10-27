@@ -1,0 +1,311 @@
+[importlinter]
+root_packages =
+    apps
+    config
+include_external_packages = False
+
+[importlinter:contract:layers]
+name = Les applications respectent l'ordre des couches
+type = layers
+layers =
+    apps.concierge
+    apps.dashboard
+    apps.quotes
+    apps.payments
+    apps.cases
+    apps.tenancy | apps.ledger | apps.crm
+    apps.accounts
+    apps.audit
+    apps.shared_kernel
+
+[importlinter:contract:apps-do-not-import-config]
+name = Les applications ne dépendent pas de la configuration
+type = forbidden
+source_modules = apps
+forbidden_modules = config
+
+[importlinter:contract:audit-uses-facades-only]
+name = audit n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.audit
+forbidden_modules =
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:accounts-uses-facades-only]
+name = accounts n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.accounts
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:tenancy-uses-facades-only]
+name = tenancy n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.tenancy
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:crm-uses-facades-only]
+name = crm n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.crm
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:ledger-uses-facades-only]
+name = ledger n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.ledger
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:cases-uses-facades-only]
+name = cases n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.cases
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:payments-uses-facades-only]
+name = payments n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.payments
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:quotes-uses-facades-only]
+name = quotes n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.quotes
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
+
+[importlinter:contract:dashboard-uses-facades-only]
+name = dashboard n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.dashboard
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+allow_indirect_imports = True
+
+[importlinter:contract:concierge-uses-facades-only]
+name = concierge n'importe que les façades publiques des autres applications
+type = forbidden
+source_modules = apps.concierge
+forbidden_modules =
+    apps.audit.models
+    apps.audit.selectors
+    apps.audit.services.commands
+    apps.accounts.models
+    apps.accounts.selectors
+    apps.accounts.services.commands
+    apps.tenancy.models
+    apps.tenancy.services.commands
+    apps.crm.models
+    apps.crm.selectors
+    apps.crm.services.commands
+    apps.ledger.models
+    apps.ledger.selectors
+    apps.ledger.services.commands
+    apps.cases.models
+    apps.cases.selectors
+    apps.cases.services.commands
+    apps.payments.models
+    apps.payments.selectors
+    apps.payments.services.commands
+    apps.quotes.models
+    apps.quotes.selectors
+    apps.quotes.services.commands
+    apps.dashboard.selectors
+allow_indirect_imports = True
