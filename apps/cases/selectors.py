@@ -56,11 +56,15 @@ def line_view(line: CaseLine, *, financials: bool) -> CaseLineView:
     )
 
 
-def summaries(actor: Actor, *, status: CaseStatus | None = None) -> list[CaseSummary]:
+def summaries(
+    actor: Actor, *, status: CaseStatus | None = None, case_id: UUID | None = None
+) -> list[CaseSummary]:
     financials = actor.can_view_financials
     queryset = Case.objects.all()
     if status is not None:
         queryset = queryset.filter(status=status)
+    if case_id is not None:
+        queryset = queryset.filter(id=case_id)
     rows = list(
         queryset.annotate(
             price_total=Sum("lines__price_xaf", filter=ACTIVE),
@@ -68,10 +72,15 @@ def summaries(actor: Actor, *, status: CaseStatus | None = None) -> list[CaseSum
             unknown_cost=Count("lines", filter=ACTIVE & Q(lines__cost_xaf__isnull=True)),
         ).order_by("-created_at", "id")
     )
-    customers = {customer.id: customer.name for customer in CrmService.list_customers(actor)}
-    balances = LedgerService.balances_by_case(actor)
-    first_sales = LedgerService.first_sale_dates(actor)
-    margins = LedgerService.margins_by_case(actor) if financials else {}
+    if case_id is None:
+        customers = {customer.id: customer.name for customer in CrmService.list_customers(actor)}
+    else:
+        customers = {
+            case.customer_id: CrmService.get_customer(actor, case.customer_id).name for case in rows
+        }
+    balances = LedgerService.balances_by_case(actor, case_id=case_id)
+    first_sales = LedgerService.first_sale_dates(actor, case_id=case_id)
+    margins = LedgerService.margins_by_case(actor, case_id=case_id) if financials else {}
     result = []
     for case in rows:
         price_total = case.price_total or 0
@@ -98,7 +107,7 @@ def summaries(actor: Actor, *, status: CaseStatus | None = None) -> list[CaseSum
 
 def case_detail(actor: Actor, case_id: UUID) -> CaseDetail:
     get_case(case_id)
-    summary = next(item for item in summaries(actor) if item.id == case_id)
+    summary = summaries(actor, case_id=case_id)[0]
     lines = CaseLine.objects.filter(case_id=case_id).order_by("created_at", "id")
     return CaseDetail(
         summary=summary,

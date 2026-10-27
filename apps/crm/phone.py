@@ -2,7 +2,7 @@ import re
 
 from apps.crm.exceptions import InvalidPhoneNumber
 
-E164 = re.compile(r"\+[1-9]\d{6,14}")
+E164 = re.compile(r"\+[1-9][0-9]{6,14}")
 SEPARATORS = re.compile(r"[\s().-]")
 
 

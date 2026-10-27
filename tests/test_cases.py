@@ -414,3 +414,23 @@ def test_reading_a_case_does_not_lock_it(scoped: AgencyFixture) -> None:
     case_id = new_case(scoped)
     assert case_row_locks(lambda: CasesService.get_case(scoped.agent, case_id)) == 0
     assert case_row_locks(lambda: CasesService.list_cases(scoped.agent)) == 0
+
+
+def test_references_keep_only_ascii_characters(scoped: AgencyFixture) -> None:
+    case_id = new_case(scoped)
+    air = air_line(scoped, case_id, ticket_number="٠٥٧ ²3 45678901")  # chiffres arabes et exposants
+    assert air.ticket_number == "345678901"
+    bus = CasesService.add_line(
+        scoped.agent,
+        case_id=case_id,
+        kind=LineKind.BUS_TICKET,
+        label="Trajet",
+        price_xaf=1_000,
+        ticket_number="ßﬃ-ab",
+    )
+    assert bus.ticket_number == "AB"
+
+
+def test_an_overlong_reference_is_refused_not_a_server_error(scoped: AgencyFixture) -> None:
+    with pytest.raises(InvalidLine):
+        air_line(scoped, new_case(scoped), ticket_number="1" * 40)

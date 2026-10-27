@@ -1,0 +1,49 @@
+{% extends "web/base.html" %}
+{% load web_extras %}
+{% block title %}Clients · Travora{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Clients</h1>
+    <p class="muted">{{ rows|length }} client{{ rows|length|pluralize }}</p>
+  </div>
+</header>
+
+<form method="get" class="toolbar" role="search">
+  <label for="client-q" class="sr-only">Rechercher un client</label>
+  <input id="client-q" type="search" name="q" value="{{ query }}" placeholder="Nom ou téléphone">
+  <button class="btn btn-secondary" type="submit">Rechercher</button>
+</form>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <caption class="sr-only">Liste des clients</caption>
+    <thead><tr>
+      <th scope="col">Client</th><th scope="col">Téléphone</th>
+      <th scope="col" class="num">Dossiers ouverts</th><th scope="col" class="num">Solde dû</th>
+      <th scope="col"><span class="sr-only">Relance</span></th>
+    </tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td class="strong">{{ row.name }}</td>
+        <td class="muted tabular">{{ row.phone|default:"—" }}</td>
+        <td class="num">{{ row.open }}</td>
+        <td class="num{% if row.due %} strong{% endif %}">{{ row.due|xaf }}</td>
+        <td class="row-actions">
+          {% if row.whatsapp %}<a class="btn btn-secondary btn-sm" href="{{ row.whatsapp }}" target="_blank" rel="noopener noreferrer">Relancer sur WhatsApp</a>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="muted">Le message est prêt : vous l'envoyez vous-même depuis WhatsApp.</p>
+{% else %}
+<div class="card empty">
+  <p><strong>Aucun client{% if query %} pour « {{ query }} »{% endif %}.</strong></p>
+  <p class="muted">Les clients sont créés avec leurs dossiers.</p>
+</div>
+{% endif %}
+{% endblock %}

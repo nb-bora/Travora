@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 
 from django.core.exceptions import ImproperlyConfigured
+from django.utils.csp import CSP
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -129,3 +131,20 @@ LOGGING = {
 
 OVERDUE_DAYS = int(env("TRAVORA_OVERDUE_DAYS", "14"))
 UPCOMING_DEPARTURE_DAYS = int(env("TRAVORA_UPCOMING_DEPARTURE_DAYS", "7"))
+
+
+# Politique de sécurité du contenu : rien n'est chargé hors de l'application elle-même, aucun
+# script ni style en ligne. Toute future dépendance externe devra être ajoutée ici, à dessein.
+SECURE_CSP = {
+    "default-src": [CSP.NONE],
+    "script-src": [CSP.SELF],
+    "style-src": [CSP.SELF],
+    "img-src": [CSP.SELF, "data:"],
+    "font-src": [CSP.SELF],
+    "connect-src": [CSP.SELF],
+    "form-action": [CSP.SELF],
+    "base-uri": [CSP.SELF],
+    "frame-ancestors": [CSP.NONE],
+    "object-src": [CSP.NONE],
+}
+SECURE_REFERRER_POLICY = "same-origin"

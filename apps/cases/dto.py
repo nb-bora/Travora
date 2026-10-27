@@ -48,3 +48,23 @@ class CaseSummary:
 class CaseDetail:
     summary: CaseSummary
     lines: tuple[CaseLineView, ...]
+
+
+@dataclass(frozen=True)
+class TicketProposal:
+    """Ce qu'on a cru lire dans un texte collé. Une valeur vide veut dire « non reconnu »."""
+
+    ticket_numbers: tuple[str, ...]
+    passengers: tuple[str, ...]
+    customer_name: str
+    origin: str
+    destination: str
+    departure_date: date | None
+    carrier: str
+    booking_reference: str
+    price_xaf: int | None
+    warnings: tuple[str, ...]
+
+    @property
+    def recognised(self) -> bool:
+        return bool(self.ticket_numbers or self.passengers or self.origin)
