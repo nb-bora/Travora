@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from apps.audit.services.public import AuditService
 from apps.cases import selectors
-from apps.cases.constants import CaseStatus, LineKind
+from apps.cases.constants import TICKET_KINDS, CaseStatus, LineKind
 from apps.cases.dto import CaseLineView
 from apps.cases.exceptions import (
     BalanceNotSettled,
@@ -65,8 +65,16 @@ def require_open_case(case_id: UUID) -> Case:
     return case
 
 
-def _clean_ticket_number(raw: str) -> str:
-    return "".join(character for character in raw if character.isdigit())
+def _clean_reference(kind: LineKind, raw: str) -> str:
+    """Billet aérien : chiffres seuls. Autres titres : code alphanumérique en majuscules."""
+    if kind is LineKind.AIR_TICKET:
+        return "".join(character for character in raw if character.isdigit())
+    return "".join(character for character in raw if character.isalnum()).upper()
+
+
+def _check_reference(kind: LineKind, reference: str) -> None:
+    if reference and kind not in TICKET_KINDS:
+        raise InvalidLine("Seul un titre de transport porte un numéro de billet.")
 
 
 def _validate_amounts(price_xaf: int | None, cost_xaf: int | None) -> None:
@@ -87,15 +95,16 @@ def add_line(
     passenger_name: str,
     ticket_number: str,
     raw_text: str,
+    carrier: str = "",
 ) -> CaseLineView:
     require_open_case(case_id)
     _validate_amounts(price_xaf, cost_xaf)
     if not label.strip():
         raise InvalidLine("Le libellé est obligatoire.")
-    number = _clean_ticket_number(ticket_number)
-    if number and kind is not LineKind.AIR_TICKET:
-        raise InvalidLine("Seul un billet d'avion porte un numéro de billet.")
+    number = _clean_reference(kind, ticket_number)
+    _check_reference(kind, number)
     line = CaseLine.objects.create(
+        carrier=carrier.strip(),
         case_id=case_id,
         kind=kind,
         label=label.strip(),
@@ -142,9 +151,8 @@ def update_line(
     if passenger_name is not None:
         line.passenger_name = passenger_name.strip()
     if ticket_number is not None:
-        number = _clean_ticket_number(ticket_number)
-        if number and line.kind != LineKind.AIR_TICKET:
-            raise InvalidLine("Seul un billet d'avion porte un numéro de billet.")
+        number = _clean_reference(LineKind(line.kind), ticket_number)
+        _check_reference(LineKind(line.kind), number)
         line.ticket_number = number
     if price_xaf is not None:
         line.price_xaf = price_xaf

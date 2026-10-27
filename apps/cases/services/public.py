@@ -40,6 +40,7 @@ class CasesService:
         passenger_name: str = "",
         ticket_number: str = "",
         raw_text: str = "",
+        carrier: str = "",
     ) -> CaseLineView:
         return commands.add_line(
             actor,
@@ -51,6 +52,7 @@ class CasesService:
             passenger_name=passenger_name,
             ticket_number=ticket_number,
             raw_text=raw_text,
+            carrier=carrier,
         )
 
     @staticmethod

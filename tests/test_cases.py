@@ -237,6 +237,46 @@ def test_a_ticket_number_is_unique_among_active_lines_of_an_agency(
         air_line(agency_b, new_case(agency_b), ticket_number="0572345678901")
 
 
+@pytest.mark.parametrize("kind", [LineKind.BUS_TICKET, LineKind.TRAIN_TICKET, LineKind.BOAT_TICKET])
+def test_every_transport_ticket_carries_a_normalised_reference_and_a_carrier(
+    scoped: AgencyFixture, kind: LineKind
+) -> None:
+    line = CasesService.add_line(
+        scoped.agent,
+        case_id=new_case(scoped),
+        kind=kind,
+        label="Douala-Yaoundé",
+        price_xaf=8_000,
+        cost_xaf=7_000,
+        ticket_number=" kb-8f3a 21 ",
+        carrier=" Touristique Express ",
+    )
+    assert line.ticket_number == "KB8F3A21"
+    assert line.carrier == "Touristique Express"
+
+
+def test_a_reference_is_unique_per_kind_of_ticket(scoped: AgencyFixture) -> None:
+    case_id = new_case(scoped)
+    for kind in (LineKind.BUS_TICKET, LineKind.TRAIN_TICKET):
+        CasesService.add_line(
+            scoped.agent,
+            case_id=case_id,
+            kind=kind,
+            label="Trajet",
+            price_xaf=1_000,
+            ticket_number="AB1234",
+        )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        CasesService.add_line(
+            scoped.agent,
+            case_id=case_id,
+            kind=LineKind.BUS_TICKET,
+            label="Trajet",
+            price_xaf=1_000,
+            ticket_number="ab-1234",
+        )
+
+
 def test_ticket_numbers_are_proposed_from_pasted_text() -> None:
     text = (
         "E-TICKET 057 2345678901 NDONG/MARIE\n"

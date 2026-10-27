@@ -47,6 +47,7 @@ def line_view(line: CaseLine, *, financials: bool) -> CaseLineView:
         label=line.label,
         passenger_name=line.passenger_name,
         ticket_number=line.ticket_number,
+        carrier=line.carrier,
         price_xaf=line.price_xaf,
         cost_xaf=line.cost_xaf if financials else None,
         margin_xaf=margin,

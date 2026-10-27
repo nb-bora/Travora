@@ -1,6 +1,6 @@
 from django.db import models
 
-from apps.cases.constants import CaseStatus, LineKind
+from apps.cases.constants import TICKET_KINDS, CaseStatus, LineKind
 from apps.shared_kernel.models import TenantScopedModel
 
 
@@ -29,7 +29,7 @@ class Case(TenantScopedModel):
 
 
 class CaseLine(TenantScopedModel):
-    """Ligne vendue : un billet d'avion ou une prestation libre.
+    """Ligne vendue : un billet (avion, bus, train, bateau) ou une prestation libre.
 
     Le coût reste inconnu (``NULL``) tant qu'il n'a pas été saisi : une ligne ne peut pas
     être émise sans lui, pour ne jamais afficher une fausse marge.
@@ -39,6 +39,7 @@ class CaseLine(TenantScopedModel):
     kind = models.CharField(max_length=16, choices=LineKind.choices)
     label = models.CharField(max_length=200)
     passenger_name = models.CharField(max_length=200, blank=True)
+    carrier = models.CharField(max_length=120, blank=True)
     ticket_number = models.CharField(max_length=32, blank=True)
     price_xaf = models.BigIntegerField()
     cost_xaf = models.BigIntegerField(null=True, blank=True)
@@ -72,11 +73,11 @@ class CaseLine(TenantScopedModel):
                 name="case_line_issued_has_cost",
             ),
             models.CheckConstraint(
-                condition=models.Q(kind=LineKind.AIR_TICKET) | models.Q(ticket_number=""),
-                name="case_line_ticket_only_for_air",
+                condition=models.Q(kind__in=sorted(TICKET_KINDS)) | models.Q(ticket_number=""),
+                name="case_line_reference_only_for_tickets",
             ),
             models.UniqueConstraint(
-                fields=["agency", "ticket_number"],
+                fields=["agency", "kind", "ticket_number"],
                 condition=~models.Q(ticket_number="") & models.Q(voided_at__isnull=True),
                 name="case_line_ticket_unique_per_agency",
             ),
