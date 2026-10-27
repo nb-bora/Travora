@@ -13,6 +13,8 @@ Version 0.2, mise à jour le 27 octobre 2026. Ces documents sont des **hypothès
 | [04-conformite-et-risques.md](04-conformite-et-risques.md) | Loi 2024/017, fiscalité, autres cadres, registre des risques R1 à R17, plans de repli |
 | [05-integrations-et-canaux.md](05-integrations-et-canaux.md) | Entrée des données (GDS, BSP), paiements et opérateurs, WhatsApp, coûts |
 | [06-validation-terrain-et-demarrage-a-chaud.md](06-validation-terrain-et-demarrage-a-chaud.md) | Comptage du marché, entretiens, critères d'arrêt, import de démarrage à chaud, plan de 90 jours |
+| [architecture.md](architecture.md) | **Architecture implémentée** (MVP) : modules, isolation, journal, rôles, règles métier, limites connues |
+| [adr/ADR-0003-stack-et-architecture-technique.md](adr/ADR-0003-stack-et-architecture-technique.md) | Décision : Django 6.1, PostgreSQL, Poetry, modulith, RLS forcée, journal en ajout seul |
 | [08-verifications-primaires-2026-10-27.md](08-verifications-primaires-2026-10-27.md) | **Registre des vérifications** : chaque point vérifié, avec citation, verdict et date |
 | [11-flux-reels-par-mode-et-plateforme.md](11-flux-reels-par-mode-et-plateforme.md) | Flux réels par mode, ambiguïtés à lever, modèles de règlement, fournisseurs et capacités, éventualités |
 | [adr/ADR-0001-plateforme-multimodale-connecteurs.md](adr/ADR-0001-plateforme-multimodale-connecteurs.md) | Décision d'architecture : plateforme multimodale à connecteurs et règles versionnées (proposée, cible long terme) |

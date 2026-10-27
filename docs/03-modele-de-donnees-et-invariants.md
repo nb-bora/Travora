@@ -1,5 +1,7 @@
 # 03 — Modèle de données et invariants financiers
 
+> **Modèle cible.** Le MVP implémenté est un sous-ensemble plus simple, décrit dans [architecture.md](architecture.md), qui fait foi pour le MVP : les entités `Booking`, `TravelDocument`, `Segment`, les modèles de règlement multiples et les schémas par mode n'existent pas encore.
+
 Statut : proposition de conception, à valider. Les montants, taux et règles fiscales cités ici sont des paramètres, pas des vérités légales (voir `04-conformite-et-risques.md`).
 
 ## 0. Conventions retenues
