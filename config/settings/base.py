@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.crm",
     "apps.ledger",
     "apps.cases",
+    "apps.payments",
 ]
 
 MIDDLEWARE = [
