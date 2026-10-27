@@ -67,3 +67,7 @@ exclude = ["migrations/", "tests/"]
 
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
+
+[[tool.mypy.overrides]]
+module = ["weasyprint", "weasyprint.*"]
+ignore_missing_imports = true
