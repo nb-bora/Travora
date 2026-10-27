@@ -30,6 +30,7 @@ class Membership(TenantScopedModel):
 
     class Meta:
         db_table = "accounts_membership"
+        default_manager_name = "objects"
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(role__in=Role.values), name="membership_role_valid"
