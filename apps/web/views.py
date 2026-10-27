@@ -18,7 +18,7 @@ from apps.payments.services.public import PaymentsService
 from apps.shared_kernel.actor import Actor
 from apps.tenancy.middleware import TenantRequest
 from apps.web.errors import attempt, reporting
-from apps.web.forms import CaseForm, LineForm, PaymentForm
+from apps.web.forms import CaseForm, LineForm, PaymentForm, QuickEntryForm
 
 
 class NoAgency(Exception):
@@ -55,8 +55,51 @@ def today(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "web/today.html",
-        {"snapshot": DashboardService.snapshot(actor), "is_manager": actor.can_view_financials},
+        {
+            "snapshot": DashboardService.snapshot(actor),
+            "is_manager": actor.can_view_financials,
+            "quick_form": QuickEntryForm(),
+        },
     )
+
+
+@agency_required
+@require_POST
+def quick_entry(request: HttpRequest) -> HttpResponse:
+    """Crée le client, le dossier et sa première ligne en un seul geste, ou rien du tout."""
+    actor = _actor(request)
+    form = QuickEntryForm(request.POST)
+    if not form.is_valid():
+        context = {
+            "snapshot": DashboardService.snapshot(actor),
+            "is_manager": actor.can_view_financials,
+            "quick_form": form,
+        }
+        return render(request, "web/today.html", context, status=422)
+    data = form.cleaned_data
+    case_id: UUID | None = None
+    with reporting(request):
+        customer = CrmService.find_or_create_customer(
+            actor, name=data["customer_name"], phone=data["customer_phone"]
+        )
+        case_id = CasesService.create_case(
+            actor, customer_id=customer.id, departure_date=data["departure_date"]
+        )
+        CasesService.add_line(
+            actor,
+            case_id=case_id,
+            kind=LineKind(data["kind"]),
+            label=data["label"],
+            price_xaf=data["price_xaf"],
+            cost_xaf=data["cost_xaf"],
+            passenger_name=data["passenger_name"],
+            ticket_number=data["ticket_number"],
+            carrier=data["carrier"],
+        )
+    if case_id is None:
+        return redirect("web:today")
+    messages.success(request, "Dossier créé avec sa première ligne.")
+    return redirect("web:case_detail", case_id=case_id)
 
 
 FILTERS = {

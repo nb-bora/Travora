@@ -2,7 +2,34 @@
 {% load web_extras %}
 {% block title %}Aujourd'hui · Travora{% endblock %}
 {% block content %}
-<header class="page-head"><h1>Aujourd'hui</h1></header>
+<section class="hero" aria-labelledby="quick-title">
+  <h1 id="quick-title">Nouveau dossier</h1>
+  <p class="hero-sub">Un client, un trajet, un prix : tout est créé en un seul geste.</p>
+  <form method="post" action="{% url 'web:quick_entry' %}" class="quick card" novalidate>
+    {% csrf_token %}
+    <fieldset class="modes">
+      <legend class="sr-only">Mode de transport</legend>
+      {% for radio in quick_form.kind %}
+        <label class="mode">{{ radio.tag }}<span>{{ radio.choice_label }}</span></label>
+      {% endfor %}
+    </fieldset>
+
+    <div class="quick-grid">
+      <div class="field route-only">{{ quick_form.origin.label_tag }}{{ quick_form.origin }}{% for e in quick_form.origin.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div class="field route-only">{{ quick_form.destination.label_tag }}{{ quick_form.destination }}{% for e in quick_form.destination.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div class="field service-only">{{ quick_form.service_label.label_tag }}{{ quick_form.service_label }}{% for e in quick_form.service_label.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div class="field">{{ quick_form.departure_date.label_tag }}{{ quick_form.departure_date }}{% for e in quick_form.departure_date.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div class="field">{{ quick_form.customer_name.label_tag }}{{ quick_form.customer_name }}{% for e in quick_form.customer_name.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div class="field">{{ quick_form.customer_phone.label_tag }}{{ quick_form.customer_phone }}{% for e in quick_form.customer_phone.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div class="field">{{ quick_form.passenger_name.label_tag }}{{ quick_form.passenger_name }}</div>
+      <div class="field route-only">{{ quick_form.carrier.label_tag }}{{ quick_form.carrier }}</div>
+      <div class="field route-only">{{ quick_form.ticket_number.label_tag }}{{ quick_form.ticket_number }}</div>
+      <div class="field">{{ quick_form.price_xaf.label_tag }}{{ quick_form.price_xaf }}{% for e in quick_form.price_xaf.errors %}<p class="field-error" role="alert">{{ e }}</p>{% endfor %}</div>
+      <div class="field">{{ quick_form.cost_xaf.label_tag }}{{ quick_form.cost_xaf }}</div>
+    </div>
+    <div class="actions"><button class="btn btn-primary btn-lg" type="submit">Créer le dossier</button></div>
+  </form>
+</section>
 
 <section class="stats" aria-label="Chiffres clés">
   <article class="card stat"><p class="stat-label">Dossiers ouverts</p><p class="stat-value">{{ snapshot.open_cases }}</p></article>

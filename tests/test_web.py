@@ -238,3 +238,81 @@ def test_state_changing_actions_refuse_get_requests(agency_a: AgencyFixture) -> 
     url = create_case_via_web(manager)
     assert manager.get(f"{url}clore/").status_code == 405
     assert manager.get(f"{url}encaissements/").status_code == 405
+
+
+def quick_data(**overrides: str) -> dict[str, str]:
+    return {
+        "kind": "air_ticket",
+        "origin": "DLA",
+        "destination": "CDG",
+        "departure_date": "",
+        "customer_name": "Marie Ndong",
+        "customer_phone": "+237677123456",
+        "passenger_name": "NDONG/MARIE",
+        "carrier": "Air France",
+        "ticket_number": "057-2345678901",
+        "price_xaf": "520000",
+        "cost_xaf": "470000",
+    } | overrides
+
+
+def test_the_quick_entry_creates_customer_case_and_line_in_one_gesture(
+    agency_a: AgencyFixture,
+) -> None:
+    agent = login("alpha-agent")
+    response = agent.post(reverse("web:quick_entry"), quick_data())
+    assert response.status_code == 302
+
+    page = agent.get(response["Location"]).content.decode()
+    for expected in ("Marie Ndong", "DLA → CDG", "0572345678901", "Air France"):
+        assert expected in page
+    assert "470 000" not in page
+
+
+def test_the_quick_entry_supports_every_mode_and_free_services(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    for kind, ref in (("bus_ticket", "KB-1"), ("train_ticket", "TR-2"), ("boat_ticket", "BT-3")):
+        response = client.post(
+            reverse("web:quick_entry"),
+            quick_data(kind=kind, ticket_number=ref, customer_phone=""),
+        )
+        assert response.status_code == 302
+    service = client.post(
+        reverse("web:quick_entry"),
+        {
+            "kind": "free_service",
+            "service_label": "Visa Schengen",
+            "customer_name": "Paul Eto",
+            "price_xaf": "80000",
+        },
+    )
+    assert service.status_code == 302
+    assert "Visa Schengen" in client.get(service["Location"]).content.decode()
+
+
+def test_the_quick_entry_validates_by_mode_and_keeps_the_input(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    response = client.post(reverse("web:quick_entry"), quick_data(origin="", customer_name=""))
+    body = response.content.decode()
+    assert response.status_code == 422
+    assert body.count("field-error") >= 2
+    assert 'value="CDG"' in body  # la saisie n'est pas perdue
+
+    no_label = client.post(
+        reverse("web:quick_entry"),
+        {"kind": "free_service", "customer_name": "X", "price_xaf": "5"},
+    )
+    assert no_label.status_code == 422
+    assert "Décrivez la prestation" in no_label.content.decode()
+
+
+def test_a_failed_quick_entry_leaves_nothing_behind(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    client.post(reverse("web:quick_entry"), quick_data())
+    again = client.post(
+        reverse("web:quick_entry"), quick_data(customer_name="Autre Client", customer_phone="")
+    )  # même numéro de billet : refusé
+    assert again.status_code == 302
+    listing = client.get(reverse("web:case_list")).content.decode()
+    assert "Autre Client" not in listing
+    assert listing.count("Marie Ndong") == 1
