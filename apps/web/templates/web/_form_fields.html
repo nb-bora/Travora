@@ -1,10 +1,4 @@
 {% for field in form %}
-  {% if field.is_hidden %}{{ field }}{% else %}
-  <div class="field">
-    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-    {{ field }}
-    {% for error in field.errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}
-  </div>
-  {% endif %}
+  {% if field.is_hidden %}{{ field }}{% else %}{% include "web/_field.html" with field=field %}{% endif %}
 {% endfor %}
 {% for error in form.non_field_errors %}<p class="field-error" role="alert">{{ error }}</p>{% endfor %}

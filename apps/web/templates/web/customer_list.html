@@ -42,8 +42,7 @@
 <p class="muted">Le message est prêt : vous l'envoyez vous-même depuis WhatsApp.</p>
 {% else %}
 <div class="card empty">
-  <p><strong>Aucun client{% if query %} pour « {{ query }} »{% endif %}.</strong></p>
-  <p class="muted">Les clients sont créés avec leurs dossiers.</p>
+  {% include "web/_empty.html" with title="Aucun client." text="Les clients sont créés avec leurs dossiers." icon="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M16 7a4 4 0 11-8 0 4 4 0 018 0z" %}
 </div>
 {% endif %}
 {% endblock %}

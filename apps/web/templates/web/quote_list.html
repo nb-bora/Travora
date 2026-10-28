@@ -1,0 +1,55 @@
+{% extends "web/base.html" %}
+{% load web_extras %}
+{% block title %}Devis · Travora{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Devis</h1>
+    <p class="muted">{{ waiting }} en attente de réponse{% if expired %} · {{ expired }} expiré{{ expired|pluralize }}{% endif %}</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'web:case_list' %}">Choisir un dossier</a>
+</header>
+
+<form method="get" class="toolbar" role="search">
+  <input type="hidden" name="etat" value="{{ current }}">
+  <label for="quote-q" class="sr-only">Rechercher</label>
+  <input id="quote-q" type="search" name="q" value="{{ query }}" placeholder="Référence ou client">
+  <button class="btn btn-secondary" type="submit">Rechercher</button>
+</form>
+
+<nav class="tabs" aria-label="Filtrer par état">
+  {% for slug, label, count in tabs %}
+    <a href="?etat={{ slug }}{% if query %}&q={{ query|urlencode }}{% endif %}"{% if slug == current %} aria-current="true"{% endif %}>{{ label }} <span class="count">{{ count }}</span></a>
+  {% endfor %}
+</nav>
+
+{% if rows %}
+<div class="card table-wrap">
+  <table>
+    <caption class="sr-only">Liste des devis</caption>
+    <thead><tr>
+      <th scope="col">Dossier</th><th scope="col">Client</th><th scope="col">Version</th>
+      <th scope="col">Valable jusqu'au</th><th scope="col" class="num">Total</th><th scope="col">État</th>
+    </tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td class="strong"><a href="{% url 'web:quote_detail' row.quote.id %}">{{ row.reference }}</a></td>
+        <td>{{ row.customer_name }}</td>
+        <td class="muted">v{{ row.quote.version }}</td>
+        <td class="muted">{{ row.quote.valid_until|date:"j N Y" }}</td>
+        <td class="num">{{ row.quote.total_xaf|xaf }}</td>
+        <td><span class="badge {{ row.badge }}">{{ row.label }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card empty">
+  <p><strong>Aucun devis ici.</strong></p>
+  <p class="muted">{% if query %}Aucun résultat pour « {{ query }} ».{% else %}Ouvrez un dossier, puis créez un devis depuis ses lignes.{% endif %}</p>
+  <a class="btn btn-primary" href="{% url 'web:case_list' %}">Voir les dossiers</a>
+</div>
+{% endif %}
+{% endblock %}

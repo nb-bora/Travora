@@ -1,0 +1,6 @@
+<div class="empty-state">
+  <span class="empty-art" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ icon|default:'M4 7h16v12H4zM4 7l2-3h12l2 3M9 12h6' }}"/></svg></span>
+  <p><strong>{{ title }}</strong></p>
+  {% if text %}<p class="muted">{{ text }}</p>{% endif %}
+  {% if action_url %}<a class="btn btn-primary" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+</div>
