@@ -395,6 +395,7 @@ def payment_void(request: HttpRequest, case_id: UUID, payment_id: UUID) -> HttpR
 
 @dataclass(frozen=True)
 class CustomerRow:
+    id: UUID
     name: str
     phone: str
     open: int
@@ -435,6 +436,7 @@ def customer_list(request: HttpRequest) -> HttpResponse:
             link = _whatsapp_link(customer.phone, customer.name, figures["due"], agency)
         rows.append(
             CustomerRow(
+                id=customer.id,
                 name=customer.name,
                 phone=customer.phone,
                 open=figures["open"],

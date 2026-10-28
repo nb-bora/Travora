@@ -14,3 +14,10 @@ class PaymentView:
     reference: str
     received_on: date
     is_voided: bool
+
+
+@dataclass(frozen=True)
+class MethodTotal:
+    method: PaymentMethod
+    count: int
+    amount_xaf: int

@@ -1,0 +1,85 @@
+{% extends "web/base.html" %}
+{% load static web_extras %}
+{% block title %}{{ customer.name }} · Clients · Travora{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'web/insights.css' %}?v=1">{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="person">
+    <span class="avatar avatar-lg" aria-hidden="true">{{ customer.name|slice:":2"|upper }}</span>
+    <div>
+      <p class="breadcrumb"><a href="{% url 'web:customer_list' %}">← Clients</a></p>
+      <h1>{{ customer.name }}</h1>
+      <p class="muted tabular">{{ customer.phone|default:"Pas de téléphone" }}</p>
+    </div>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'web:customer_export' customer.id %}">Exporter les données (CSV)</a>
+</header>
+
+<section class="stats" aria-label="Situation du client">
+  <article class="card stat"><p class="stat-label">Solde dû</p><p class="stat-value">{{ due_xaf|xaf }}</p><p class="stat-hint">{% if due_xaf %}Sur {{ open_count }} dossier{{ open_count|pluralize }} ouvert{{ open_count|pluralize }}{% else %}Rien à relancer{% endif %}</p></article>
+  <article class="card stat"><p class="stat-label">Dossiers</p><p class="stat-value">{{ cases|length }}</p><p class="stat-hint">{{ open_count }} ouvert{{ open_count|pluralize }}</p></article>
+  <article class="card stat"><p class="stat-label">Facturé</p><p class="stat-value">{{ billed_xaf|xaf }}</p><p class="stat-hint">Dossiers non annulés</p></article>
+  <article class="card stat"><p class="stat-label">Encaissé</p><p class="stat-value">{{ paid_xaf|xaf }}</p><p class="stat-hint">Encaissements non annulés</p></article>
+</section>
+
+<section class="card table-wrap" aria-labelledby="h-cases">
+  <div class="card-head"><h2 id="h-cases">Dossiers</h2></div>
+  {% if cases %}
+  <table>
+    <caption class="sr-only">Dossiers du client</caption>
+    <thead><tr>
+      <th scope="col">Dossier</th><th scope="col">Départ</th><th scope="col">État</th>
+      <th scope="col" class="num">Total</th><th scope="col" class="num">Solde</th>
+    </tr></thead>
+    <tbody>
+    {% for case in cases %}
+      <tr>
+        <td class="strong"><a href="{% url 'web:case_detail' case.id %}">{{ case.reference }}</a></td>
+        <td class="muted tabular">{{ case.departure_date|date:"d/m/Y"|default:"—" }}</td>
+        <td>{% include "web/_status_badge.html" with status=case.status balance=case.balance_xaf %}</td>
+        <td class="num">{{ case.price_total_xaf|xaf }}</td>
+        <td class="num{% if case.balance_xaf > 0 %} strong{% endif %}">{{ case.balance_xaf|xaf }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty muted">Aucun dossier pour ce client.</p>
+  {% endif %}
+</section>
+
+<section class="card table-wrap" aria-labelledby="h-pay">
+  <div class="card-head"><h2 id="h-pay">Encaissements du client</h2></div>
+  {% if payments %}
+  <table>
+    <caption class="sr-only">Encaissements du client</caption>
+    <thead><tr>
+      <th scope="col">Date</th><th scope="col">Dossier</th><th scope="col">Moyen</th>
+      <th scope="col">Référence</th><th scope="col" class="num">Montant</th>
+    </tr></thead>
+    <tbody>
+    {% for payment in payments %}
+      <tr>
+        <td class="tabular">{{ payment.received_on|date:"d/m/Y" }}</td>
+        <td><a href="{% url 'web:case_detail' payment.case_id %}">{{ payment.case_reference }}</a></td>
+        <td><span class="method-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ payment.method_value|method_icon }}"/></svg>{{ payment.method }}</span></td>
+        <td class="muted tabular">{{ payment.reference|default:"—" }}</td>
+        <td class="num strong">{{ payment.amount_xaf|xaf }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty muted">Aucun encaissement enregistré.</p>
+  {% endif %}
+</section>
+
+<section class="card rights" aria-labelledby="h-rights">
+  <h2 id="h-rights">Droits sur les données</h2>
+  <ul class="rights-list">
+    <li><strong>Accès</strong><span>Le bouton « Exporter les données » fournit la fiche, les dossiers et les encaissements dans un fichier lisible.</span></li>
+    <li><strong>Rectification, consentement aux rappels, anonymisation</strong><span class="badge badge-neutral">À venir</span><span>Ces actions ne sont pas encore disponibles. En attendant, demandez-les à l'administrateur de Travora.</span></li>
+  </ul>
+  <p class="muted flush">L'historique comptable ne se modifie jamais : une anonymisation ne touchera que la fiche.</p>
+</section>
+{% endblock %}

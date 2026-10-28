@@ -1,0 +1,40 @@
+/* Fiche client et rapports. Les barres sont des <meter> : aucun style en ligne (CSP stricte). */
+.person { display: flex; align-items: center; gap: 16px; }
+.avatar-lg { width: 56px; height: 56px; font-size: 18px; }
+.person .breadcrumb { margin: 0 0 2px; }
+.card-head { padding: 18px 20px 6px; }
+.method-label { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+.method-label svg { color: var(--teal); }
+.table-wrap + .table-wrap, .stats + .table-wrap, .card + .card { margin-top: 16px; }
+.table-wrap .empty { padding: 24px 20px; margin: 0; }
+
+.rights { display: grid; gap: 12px; margin-top: 16px; }
+.rights-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.rights-list li { display: grid; gap: 4px; }
+.rights-list span:not(.badge) { color: var(--text-2); font-size: 13px; }
+.rights-list .badge { justify-self: start; }
+
+.period { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+.seg { display: inline-flex; gap: 4px; background: var(--row); border-radius: 12px; padding: 4px; }
+.seg-item { height: 38px; padding: 0 16px; border: 0; border-radius: 9px; background: none; color: var(--text-2); font: inherit; font-weight: 500; cursor: pointer; transition: background var(--ease), color var(--ease), box-shadow var(--ease); }
+.seg-item:hover { color: var(--text); }
+.seg-item.is-active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 2px rgba(11, 31, 58, .12); }
+.seg-item:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.period-custom { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.period .field-error { flex-basis: 100%; }
+
+.report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.report-grid .card + .card { margin-top: 0; }
+.report-grid .card { padding: 0 0 12px; }
+.bars { list-style: none; margin: 0; padding: 8px 20px 0; display: grid; gap: 18px; }
+.bars-label, .bars-figures { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.bars-figures { font-variant-numeric: tabular-nums; }
+.bar { width: 100%; height: 10px; margin: 6px 0; border: 0; border-radius: 999px; background: var(--row); accent-color: var(--teal); }
+.bar::-webkit-meter-bar { height: 10px; border: 0; border-radius: 999px; background: var(--row); }
+.bar::-webkit-meter-optimum-value { background: var(--teal); border-radius: 999px; transition: width .4s cubic-bezier(.2, .8, .2, 1); }
+.bar::-moz-meter-bar { background: var(--teal); border-radius: 999px; }
+
+@media (max-width: 860px) {
+  .report-grid { grid-template-columns: 1fr; }
+  .period { align-items: stretch; }
+}
