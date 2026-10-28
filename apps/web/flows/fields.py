@@ -49,9 +49,18 @@ def integer(label: str, *, minimum: int = 0, maximum: int = 99, initial: int | N
     )
 
 
+CITY_LIST_ID = "cities"
+CITIES = (
+    "Douala", "Yaoundé", "Bafoussam", "Bamenda", "Garoua", "Maroua", "Ngaoundéré", "Kribi",
+    "Limbé", "Bertoua", "Ebolowa", "Buea", "Edéa", "Kumba", "Dschang", "Nkongsamba", "Malabo",
+)  # fmt: skip
+
+
 def text(label: str, *, max_length: int = 120, required: bool = True, placeholder: str = "",
-         css: str = "") -> forms.CharField:  # fmt: skip
+         css: str = "", suggest: bool = False) -> forms.CharField:  # fmt: skip
     attrs: dict[str, str] = {}
+    if suggest:
+        attrs["list"] = CITY_LIST_ID
     if placeholder:
         attrs["placeholder"] = placeholder
     if css:

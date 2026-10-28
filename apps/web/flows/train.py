@@ -37,8 +37,8 @@ SEATS_PER_ROW = 12
 
 class TrainTripForm(WebForm):
     UNIQUE = ()
-    origin = text("Gare de départ", max_length=80, placeholder="Douala")
-    destination = text("Gare d'arrivée", max_length=80, placeholder="Yaoundé")
+    origin = text("Gare de départ", max_length=80, placeholder="Douala", suggest=True)
+    destination = text("Gare d'arrivée", max_length=80, placeholder="Yaoundé", suggest=True)
     departure_date = date_field("Date")
     train = text("Train", max_length=80, placeholder="Train 2")
     departure_time = time_field("Départ", required=True)
