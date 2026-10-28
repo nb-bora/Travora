@@ -1,0 +1,45 @@
+/* Page de connexion : panneau animé, champs outlined à étiquette flottante. Aucune animation sous « réduire les animations ». */
+.auth-brand { position: relative; overflow: hidden; background: #07162b; }
+.auth-brand > * { position: relative; }
+.auth-glow { position: absolute !important; border-radius: 50%; pointer-events: none; }
+.auth-glow-a { width: 420px; height: 420px; top: -120px; right: -140px; background: radial-gradient(circle, rgba(45, 212, 191, .38), rgba(45, 212, 191, 0) 70%); }
+.auth-glow-b { width: 480px; height: 480px; bottom: -200px; left: -160px; background: radial-gradient(circle, rgba(56, 120, 255, .34), rgba(56, 120, 255, 0) 70%); }
+.auth-route { position: absolute !important; inset: 0; width: 100%; height: 100%; opacity: .5; pointer-events: none; }
+.auth-card h1 { letter-spacing: -.02em; }
+.auth-foot { font-size: 12px; margin: 4px 0 0; }
+
+.ofield { position: relative; height: 56px; display: flex; align-items: center; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--surface); transition: border-color var(--ease), box-shadow var(--ease); }
+.ofield-icon { position: absolute; left: 14px; color: var(--text-2); transition: color var(--ease); pointer-events: none; }
+.ofield input { width: 100%; height: 100%; border: 0; background: none; color: var(--text); font: inherit; font-size: 15px; padding: 18px 48px 0 46px; outline: none; border-radius: 14px; }
+.ofield label { position: absolute; left: 46px; top: 17px; font-size: 15px; color: var(--text-2); pointer-events: none; transition: top .18s cubic-bezier(.2, .8, .2, 1), font-size .18s cubic-bezier(.2, .8, .2, 1), color var(--ease); }
+.ofield input:focus + label, .ofield input:not(:placeholder-shown) + label { top: 6px; font-size: 11px; font-weight: 600; }
+.ofield:focus-within { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(15, 118, 110, .16); }
+.ofield:focus-within .ofield-icon, .ofield:focus-within label { color: var(--teal); }
+.is-error .ofield { border-color: #dc2626; }
+.is-error .ofield .ofield-icon { color: #dc2626; }
+.ofield-toggle { position: absolute; right: 8px; width: 36px; height: 36px; border: 0; border-radius: 10px; background: none; color: var(--text-2); display: grid; place-items: center; cursor: pointer; transition: background var(--ease); }
+.ofield-toggle:hover { background: var(--row); }
+.ofield-toggle[aria-pressed="true"] { color: var(--teal); }
+
+.auth-submit { position: relative; justify-content: center; gap: 10px; transition: transform var(--ease), box-shadow var(--ease), opacity var(--ease); }
+.auth-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(15, 118, 110, .32); }
+.auth-submit:active:not(:disabled) { transform: translateY(0); }
+.auth-spinner { display: none; width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid rgba(255, 255, 255, .35); border-top-color: #fff; }
+.auth-submit[aria-busy="true"] .auth-spinner { display: inline-block; }
+
+@keyframes auth-drift-a { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(60px, 40px) scale(1.15); } }
+@keyframes auth-drift-b { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-50px, -30px) scale(1.2); } }
+@keyframes auth-dash { to { stroke-dashoffset: -48; } }
+@keyframes auth-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes auth-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-9px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(3px); } }
+@keyframes auth-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  .auth-glow-a { animation: auth-drift-a 14s ease-in-out infinite; }
+  .auth-glow-b { animation: auth-drift-b 18s ease-in-out infinite; }
+  .auth-route path { animation: auth-dash 1.6s linear infinite; }
+  .auth-rise { animation: auth-rise .7s cubic-bezier(.2, .8, .2, 1) both; }
+  .auth-d1 { animation-delay: .15s; } .auth-d2 { animation-delay: .3s; } .auth-d3 { animation-delay: .45s; }
+  .auth-card { animation: auth-rise .6s .15s cubic-bezier(.2, .8, .2, 1) both; }
+  .auth-card.is-error { animation: auth-shake .45s ease both; }
+  .auth-spinner { animation: auth-spin .8s linear infinite; }
+}

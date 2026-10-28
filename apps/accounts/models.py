@@ -37,3 +37,20 @@ class Membership(TenantScopedModel):
             ),
         ]
         indexes = [models.Index(fields=["agency", "role"], name="membership_agency_role_idx")]
+
+
+class LoginFailure(models.Model):
+    """Échec de connexion : sert à ralentir les devinettes de mot de passe.
+
+    Table globale comme ``User`` : l'identité se vérifie avant de connaître l'agence.
+    """
+
+    username = models.CharField(max_length=150, db_index=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "accounts_login_failure"
+
+    def __str__(self) -> str:
+        return f"{self.username} @ {self.created_at:%Y-%m-%d %H:%M}"

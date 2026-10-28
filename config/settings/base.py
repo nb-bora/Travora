@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.csp.ContentSecurityPolicyMiddleware",
+    "apps.web.middleware.PermissionsPolicyMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -92,6 +93,13 @@ DATABASES = {
 }
 
 AUTH_USER_MODEL = "accounts.User"
+# Ralentissement des devinettes : au-delà de LOGIN_MAX_FAILURES échecs en LOGIN_LOCK_MINUTES
+# minutes pour un identifiant, la connexion est refusée sans même vérifier le mot de passe.
+# Une limite par adresse se règle au niveau du reverse proxy (hébergement non décidé).
+LOGIN_MAX_FAILURES = 5
+LOGIN_LOCK_MINUTES = 15
+SESSION_COOKIE_AGE = 60 * 60 * 8  # une journée de travail, renouvelée à chaque requête
+SESSION_SAVE_EVERY_REQUEST = True
 LOGIN_URL = "web:login"
 LOGIN_REDIRECT_URL = "web:today"
 LOGOUT_REDIRECT_URL = "web:login"

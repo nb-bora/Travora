@@ -585,3 +585,81 @@ def test_authenticated_pages_are_never_cached(agency_a: AgencyFixture) -> None:
     cache_control = response["Cache-Control"]
     assert "no-store" in cache_control
     assert "private" in cache_control
+
+
+def bad_login(client: Client, username: str = "alpha-manager") -> str:
+    response = client.post(reverse("web:login"), {"username": username, "password": "mauvais"})
+    return response.content.decode()
+
+
+def test_too_many_wrong_passwords_lock_the_account_for_a_while(agency_a: AgencyFixture) -> None:
+    client = Client()
+    for _ in range(5):
+        assert "incorrect" in bad_login(client)
+    locked = client.post(
+        reverse("web:login"), {"username": "alpha-manager", "password": PASSWORD}
+    ).content.decode()
+    assert "Trop de tentatives" in locked  # même avec le bon mot de passe
+
+    # un autre identifiant n'est pas touché
+    assert (
+        Client()
+        .post(reverse("web:login"), {"username": "alpha-agent", "password": PASSWORD})
+        .status_code
+        == 302
+    )
+
+
+def test_a_successful_login_clears_the_failures(agency_a: AgencyFixture) -> None:
+    client = Client()
+    for _ in range(4):
+        bad_login(client)
+    assert (
+        client.post(
+            reverse("web:login"), {"username": "alpha-manager", "password": PASSWORD}
+        ).status_code
+        == 302
+    )
+    client.post(reverse("web:logout"))
+    for _ in range(4):
+        assert "incorrect" in bad_login(client)  # le compteur est reparti de zéro
+
+
+def test_the_lock_expires_after_the_window(agency_a: AgencyFixture) -> None:
+    from datetime import timedelta
+
+    from apps.accounts.models import LoginFailure
+
+    client = Client()
+    for _ in range(5):
+        bad_login(client)
+    LoginFailure.objects.update(created_at=timezone.now() - timedelta(minutes=16))
+    assert (
+        client.post(
+            reverse("web:login"), {"username": "alpha-manager", "password": PASSWORD}
+        ).status_code
+        == 302
+    )
+
+
+def test_a_logged_in_user_opening_the_login_page_goes_home_whatever_next_says(
+    agency_a: AgencyFixture,
+) -> None:
+    client = login("alpha-manager")
+    response = client.get(reverse("web:login") + "?next=/connexion/")
+    assert response.status_code == 302
+    assert response["Location"] == reverse("web:today")
+
+
+def test_browser_features_are_cut_off_by_a_permissions_policy(db: None) -> None:
+    response = Client().get(reverse("web:login"))
+    assert "camera=()" in response["Permissions-Policy"]
+    assert "geolocation=()" in response["Permissions-Policy"]
+
+
+def test_the_login_page_uses_the_outlined_fields_and_its_own_assets(db: None) -> None:
+    page = Client().get(reverse("web:login")).content.decode()
+    assert "ofield" in page
+    assert "web/login.css" in page
+    assert "web/login.js" in page
+    assert "<script>" not in page  # CSP : pas de script en ligne
