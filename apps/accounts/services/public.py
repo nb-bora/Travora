@@ -3,7 +3,7 @@
 from uuid import UUID
 
 from apps.accounts import selectors
-from apps.accounts.dto import MembershipInfo
+from apps.accounts.dto import MemberInfo, MembershipInfo
 from apps.accounts.services import commands
 from apps.shared_kernel.actor import Actor
 from apps.shared_kernel.roles import Role
@@ -29,6 +29,11 @@ class AccountsService:
     @staticmethod
     def clear_login_failures(*, username: str) -> None:
         commands.clear_login_failures(username=username)
+
+    @staticmethod
+    def team(actor: Actor) -> list[MemberInfo]:
+        actor.require_manager()
+        return selectors.team()
 
     @staticmethod
     def create_first_manager(*, username: str, password: str) -> MembershipInfo:

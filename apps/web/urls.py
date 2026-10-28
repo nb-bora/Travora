@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from apps.web import views
+from apps.web import reglages, views
 from apps.web.auth import WebLoginView
 from apps.web.flows import views as flows
 
@@ -39,6 +39,9 @@ urlpatterns = [
         name="payment_void",
     ),
     path("clients/", views.customer_list, name="customer_list"),
+    path("reglages/", reglages.settings_page, name="settings"),
+    path("reglages/equipe/", reglages.member_add, name="member_add"),
+    path("reglages/cloture/", reglages.period_close, name="period_close"),
     path("dossiers/<uuid:case_id>/clore/", views.case_close, name="case_close"),
     path("dossiers/<uuid:case_id>/rouvrir/", views.case_reopen, name="case_reopen"),
 ]

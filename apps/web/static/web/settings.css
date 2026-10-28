@@ -1,0 +1,18 @@
+/* Réglages : grille de cartes, listes de faits, puces de mois. Mêmes jetons que travora.css. */
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.settings-wide { grid-column: 1 / -1; }
+.settings-note { margin: 8px 0 12px; font-size: 13px; }
+.facts { margin: 0; display: grid; gap: 10px; }
+.facts div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--row); }
+.facts div:last-child { border-bottom: 0; padding-bottom: 0; }
+.facts dt { color: var(--text-2); }
+.facts dd { margin: 0; font-weight: 600; text-align: right; }
+.settings-form { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: start; }
+.settings-form .actions { grid-column: 1 / -1; }
+.settings-close { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.settings-close .field { min-width: 240px; }
+.month-chips { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-danger { background: #b91c1c; color: #fff; }
+.btn-danger:hover { filter: brightness(1.1); }
+.settings-confirm .alert { line-height: 1.5; }
+@media (max-width: 800px) { .settings-grid { grid-template-columns: 1fr; } }
