@@ -37,6 +37,7 @@
       </div>
       {% endif %}
       {% block flow_body %}{% endblock %}
+      <datalist id="cities">{% for city in cities %}<option value="{{ city }}">{% endfor %}</datalist>
     </main>
     {% block foot %}
     <footer class="flow-foot">

@@ -705,3 +705,10 @@ def test_the_cost_split_never_loses_a_franc() -> None:
     for total in (0, 1, 7, 200_000, 199_999):
         for weights in ([50_000, 50_000, 110_000], [1, 1, 1], [0, 0], [3]):
             assert sum(allocate(total, weights)) == total
+
+
+def test_route_fields_suggest_cities(agency_a: AgencyFixture) -> None:
+    client = login("alpha-manager")
+    page = client.get(reverse("web:flow_start", args=["bus"]), follow=True).content.decode()
+    assert 'list="cities"' in page
+    assert '<option value="Douala">' in page

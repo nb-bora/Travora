@@ -26,7 +26,7 @@ from apps.tenancy.services.public import TenancyService
 from apps.web.access import _actor, agency_required
 from apps.web.errors import attempt
 from apps.web.flows.base import FlowDef
-from apps.web.flows.fields import WebForm, date_field
+from apps.web.flows.fields import CITIES, WebForm, date_field
 from apps.web.flows.registry import FLOWS
 from apps.web.flows.spec import (
     MAX_TRAVELLERS,
@@ -81,6 +81,7 @@ def _layout(
         "footer_label": footer_label,
         "footer_total": footer_total,
         "close_url": reverse("web:flow_chooser"),
+        "cities": CITIES,
         **extra,
     }
 

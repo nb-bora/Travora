@@ -31,8 +31,8 @@ BALANCE_DAYS_BEFORE = 7
 
 class BoatTripForm(WebForm):
     UNIQUE = ()
-    origin = text("Port de départ", max_length=80, placeholder="Douala")
-    destination = text("Port d'arrivée", max_length=80, placeholder="Malabo")
+    origin = text("Port de départ", max_length=80, placeholder="Douala", suggest=True)
+    destination = text("Port d'arrivée", max_length=80, placeholder="Malabo", suggest=True)
     departure_date = date_field("Date")
     carrier = text("Compagnie maritime", max_length=120)
     ship = text("Navire", max_length=80, required=False)

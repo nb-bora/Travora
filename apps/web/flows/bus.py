@@ -29,8 +29,8 @@ BAG_NOTE = "Un bagage de plus que la franchise du transporteur ajoute un supplé
 
 class BusTripForm(WebForm):
     UNIQUE = ()
-    origin = text("Départ", max_length=80, placeholder="Douala")
-    destination = text("Arrivée", max_length=80, placeholder="Yaoundé")
+    origin = text("Départ", max_length=80, placeholder="Douala", suggest=True)
+    destination = text("Arrivée", max_length=80, placeholder="Yaoundé", suggest=True)
     departure_date = date_field("Date")
     departure_time = time_field("Heure de départ", required=True)
     carrier = text("Transporteur", max_length=120)
