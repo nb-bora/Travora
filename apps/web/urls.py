@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from apps.web import views
+from apps.web import quotes_views, views
 from apps.web.auth import WebLoginView
 from apps.web.flows import views as flows
 
@@ -39,6 +39,13 @@ urlpatterns = [
         name="payment_void",
     ),
     path("clients/", views.customer_list, name="customer_list"),
+    path("devis/", quotes_views.quote_list, name="quote_list"),
+    path("devis/<uuid:quote_id>/", quotes_views.quote_detail, name="quote_detail"),
+    path("devis/<uuid:quote_id>/envoyer/", quotes_views.quote_send, name="quote_send"),
+    path("devis/<uuid:quote_id>/accepter/", quotes_views.quote_accept, name="quote_accept"),
+    path("devis/<uuid:quote_id>/refuser/", quotes_views.quote_refuse, name="quote_refuse"),
+    path("devis/<uuid:quote_id>/pdf/", quotes_views.quote_pdf, name="quote_pdf"),
+    path("dossiers/<uuid:case_id>/devis/", quotes_views.quote_create, name="quote_create"),
     path("dossiers/<uuid:case_id>/clore/", views.case_close, name="case_close"),
     path("dossiers/<uuid:case_id>/rouvrir/", views.case_reopen, name="case_reopen"),
 ]
