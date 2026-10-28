@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from datetime import date
 from uuid import UUID
 
+from apps.cases.dto import KindSales
 from apps.dashboard.constants import AlertKind
+from apps.payments.dto import MethodTotal
 
 
 @dataclass(frozen=True)
@@ -26,3 +29,16 @@ class DashboardSnapshot:
     realized_margin_xaf: int | None
     at_risk_cases: int
     alerts: tuple[Alert, ...]
+
+
+@dataclass(frozen=True)
+class SalesReport:
+    """Ventes émises et encaissements d'une période. Coût et marge : ``None`` pour un agent."""
+
+    start: date
+    end: date
+    by_kind: tuple[KindSales, ...]
+    by_method: tuple[MethodTotal, ...]
+    revenue_xaf: int
+    collected_xaf: int
+    margin_xaf: int | None

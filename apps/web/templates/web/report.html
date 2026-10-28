@@ -1,0 +1,71 @@
+{% extends "web/base.html" %}
+{% load static web_extras %}
+{% block title %}Rapports · Travora{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'web/insights.css' %}?v=1">{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Rapports</h1>
+    <p class="muted">Du {{ start|date:"d/m/Y" }} au {{ end|date:"d/m/Y" }}</p>
+  </div>
+  <a class="btn btn-secondary" href="{% url 'web:report_export' %}?du={{ start|date:'Y-m-d' }}&amp;au={{ end|date:'Y-m-d' }}">Exporter en CSV</a>
+</header>
+
+<form method="get" class="card period" aria-label="Période">
+  <div class="seg" role="group" aria-label="Périodes prédéfinies">
+    {% for key, label in periods %}
+      <button type="submit" name="periode" value="{{ key }}" class="seg-item{% if period == key %} is-active{% endif %}"{% if period == key %} aria-pressed="true"{% else %} aria-pressed="false"{% endif %}>{{ label }}</button>
+    {% endfor %}
+  </div>
+  <div class="period-custom">
+    <div class="field"><label for="rp-du">Du</label><input id="rp-du" type="date" name="du" value="{{ start|date:'Y-m-d' }}"></div>
+    <div class="field"><label for="rp-au">Au</label><input id="rp-au" type="date" name="au" value="{{ end|date:'Y-m-d' }}"></div>
+    <button class="btn btn-secondary" type="submit">Appliquer</button>
+  </div>
+  {% if error %}<p class="field-error" role="alert">{{ error }}</p>{% endif %}
+</form>
+
+<section class="stats" aria-label="Chiffres de la période">
+  <article class="card stat"><p class="stat-label">Ventes émises</p><p class="stat-value">{{ sales.revenue_xaf|xaf }}</p><p class="stat-hint">Lignes émises, hors annulées</p></article>
+  <article class="card stat"><p class="stat-label">Encaissé</p><p class="stat-value">{{ sales.collected_xaf|xaf }}</p><p class="stat-hint">Encaissements non annulés</p></article>
+  {% if is_manager %}
+  <article class="card stat"><p class="stat-label">Marge sur ventes</p><p class="stat-value">{{ sales.margin_xaf|xaf }}</p><p class="stat-hint">Prix moins coût d'achat</p></article>
+  {% endif %}
+</section>
+
+<div class="report-grid">
+  <section class="card" aria-labelledby="h-kind">
+    <div class="card-head"><h2 id="h-kind">Ventes par mode</h2></div>
+    {% if sales.by_kind %}
+    <ul class="bars">
+      {% for row in sales.by_kind %}
+      <li>
+        <div class="bars-label"><span class="method-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ row.kind|kind_icon }}"/></svg>{{ row.kind.label }}</span><span class="muted">{{ row.lines }} ligne{{ row.lines|pluralize }}</span></div>
+        <meter class="bar" min="0" max="{{ top_revenue }}" value="{{ row.revenue_xaf }}" aria-label="{{ row.kind.label }}">{{ row.revenue_xaf|xaf }}</meter>
+        <div class="bars-figures"><strong>{{ row.revenue_xaf|xaf }}</strong>{% if is_manager %}<span class="muted">Marge {{ row.margin_xaf|xaf }}</span>{% endif %}</div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty muted">Aucune vente émise sur cette période.</p>
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="h-method">
+    <div class="card-head"><h2 id="h-method">Encaissements par moyen de paiement</h2></div>
+    {% if sales.by_method %}
+    <ul class="bars">
+      {% for row in sales.by_method %}
+      <li>
+        <div class="bars-label"><span class="method-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ row.method.value|method_icon }}"/></svg>{{ row.method.label }}</span><span class="muted">{{ row.count }} encaissement{{ row.count|pluralize }}</span></div>
+        <meter class="bar" min="0" max="{{ top_collected }}" value="{{ row.amount_xaf }}" aria-label="{{ row.method.label }}">{{ row.amount_xaf|xaf }}</meter>
+        <div class="bars-figures"><strong>{{ row.amount_xaf|xaf }}</strong></div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty muted">Aucun encaissement sur cette période.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

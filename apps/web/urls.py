@@ -1,7 +1,7 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from apps.web import reglages, views
+from apps.web import insights, quotes_views, reglages, views
 from apps.web.auth import WebLoginView
 from apps.web.flows import views as flows
 
@@ -42,6 +42,17 @@ urlpatterns = [
     path("reglages/", reglages.settings_page, name="settings"),
     path("reglages/equipe/", reglages.member_add, name="member_add"),
     path("reglages/cloture/", reglages.period_close, name="period_close"),
+    path("clients/<uuid:customer_id>/", insights.customer_detail, name="customer_detail"),
+    path("clients/<uuid:customer_id>/export/", insights.customer_export, name="customer_export"),
+    path("rapports/", insights.report, name="report"),
+    path("rapports/export/", insights.report_export, name="report_export"),
+    path("devis/", quotes_views.quote_list, name="quote_list"),
+    path("devis/<uuid:quote_id>/", quotes_views.quote_detail, name="quote_detail"),
+    path("devis/<uuid:quote_id>/envoyer/", quotes_views.quote_send, name="quote_send"),
+    path("devis/<uuid:quote_id>/accepter/", quotes_views.quote_accept, name="quote_accept"),
+    path("devis/<uuid:quote_id>/refuser/", quotes_views.quote_refuse, name="quote_refuse"),
+    path("devis/<uuid:quote_id>/pdf/", quotes_views.quote_pdf, name="quote_pdf"),
+    path("dossiers/<uuid:case_id>/devis/", quotes_views.quote_create, name="quote_create"),
     path("dossiers/<uuid:case_id>/clore/", views.case_close, name="case_close"),
     path("dossiers/<uuid:case_id>/rouvrir/", views.case_reopen, name="case_reopen"),
 ]

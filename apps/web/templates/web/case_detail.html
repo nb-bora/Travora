@@ -60,7 +60,7 @@
         </tbody>
       </table>
       {% else %}
-      <div class="empty"><p><strong>Aucune ligne.</strong></p><p class="muted">Ajoutez un billet ou une prestation ci-dessous.</p></div>
+      <div class="empty">{% include "web/_empty.html" with title="Aucune ligne." text="Ajoutez un billet ou une prestation ci-dessous." %}</div>
       {% endif %}
 
       {% if is_open %}
@@ -103,7 +103,7 @@
         {% endfor %}
       </ul>
       {% else %}
-      <div class="empty"><p class="muted">Aucun encaissement pour l'instant.</p></div>
+      <div class="empty">{% include "web/_empty.html" with title="Aucun encaissement." text="Les paiements reçus apparaîtront ici." icon="M2 7h20v10H2zM12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" %}</div>
       {% endif %}
     </section>
   </div>
@@ -120,6 +120,31 @@
         {% include "web/_field.html" with field=payment_form.received_on %}
         {{ payment_form.idempotency_key }}
         <button class="btn btn-primary" type="submit">Enregistrer l'encaissement</button>
+      </form>
+    </section>
+    <section class="card" aria-labelledby="quotes-title">
+      <h2 id="quotes-title" class="card-title">Devis</h2>
+      {% if quotes %}
+      <ul class="quote-mini">
+        {% for quote in quotes %}
+        <li><a href="{% url 'web:quote_detail' quote.id %}">Version {{ quote.version }}</a>
+          <span class="muted">{{ quote.total_xaf|xaf }}</span>
+          {% if quote.is_expired %}<span class="badge badge-warning">Expiré</span>
+          {% elif quote.status.value == "draft" %}<span class="badge badge-neutral">Brouillon</span>
+          {% elif quote.status.value == "sent" %}<span class="badge badge-info">Envoyé</span>
+          {% elif quote.status.value == "accepted" %}<span class="badge badge-success">Accepté</span>
+          {% else %}<span class="badge badge-danger">Refusé</span>{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted flush">Proposez un prix au client avant de vendre.</p>
+      {% endif %}
+      <form method="post" action="{% url 'web:quote_create' summary.id %}" class="form">
+        {% csrf_token %}
+        <div class="field"><label for="quote-valid">Valable jusqu'au</label>
+          <input id="quote-valid" type="date" name="valid_until" value="{{ quote_default_date|date:'Y-m-d' }}" required></div>
+        <button class="btn btn-secondary" type="submit">Créer un devis</button>
+        <p class="field-hint">Le devis reprend les lignes actives, sans coût ni marge.</p>
       </form>
     </section>
     <section class="card" aria-labelledby="actions-title">

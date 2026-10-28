@@ -20,6 +20,7 @@ from apps.dashboard.constants import AlertKind
 from apps.dashboard.services.public import DashboardService
 from apps.payments.constants import PaymentMethod
 from apps.payments.services.public import PaymentsService
+from apps.quotes.services.public import QuotesService
 from apps.shared_kernel.actor import Actor
 from apps.tenancy.services.public import TenancyService
 from apps.web.access import _actor, agency_required
@@ -240,6 +241,8 @@ def _detail_context(
         "detail": detail,
         "summary": detail.summary,
         "payments": PaymentsService.payments_for_case(actor, case_id),
+        "quotes": QuotesService.quotes_for_case(actor, case_id),
+        "quote_default_date": timezone.localdate() + timedelta(days=15),
         "line_form": line_form or LineForm(),
         "payment_form": payment_form
         or PaymentForm(initial={"amount_xaf": max(detail.summary.balance_xaf, 0) or None}),
@@ -392,6 +395,7 @@ def payment_void(request: HttpRequest, case_id: UUID, payment_id: UUID) -> HttpR
 
 @dataclass(frozen=True)
 class CustomerRow:
+    id: UUID
     name: str
     phone: str
     open: int
@@ -432,6 +436,7 @@ def customer_list(request: HttpRequest) -> HttpResponse:
             link = _whatsapp_link(customer.phone, customer.name, figures["due"], agency)
         rows.append(
             CustomerRow(
+                id=customer.id,
                 name=customer.name,
                 phone=customer.phone,
                 open=figures["open"],

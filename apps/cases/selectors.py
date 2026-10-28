@@ -1,10 +1,11 @@
+from datetime import date
 from uuid import UUID
 
 from django.db.models import Count, Q, Sum
 
 from apps.cases.constants import CaseStatus, LineKind
 from apps.cases.details import visible_details
-from apps.cases.dto import CaseDetail, CaseLineView, CaseSummary
+from apps.cases.dto import CaseDetail, CaseLineView, CaseSummary, KindSales
 from apps.cases.exceptions import CaseNotFound, LineNotFound
 from apps.cases.models import Case, CaseLine
 from apps.crm.services.public import CrmService
@@ -59,7 +60,11 @@ def line_view(line: CaseLine, *, financials: bool) -> CaseLineView:
 
 
 def summaries(
-    actor: Actor, *, status: CaseStatus | None = None, case_id: UUID | None = None
+    actor: Actor,
+    *,
+    status: CaseStatus | None = None,
+    case_id: UUID | None = None,
+    customer_id: UUID | None = None,
 ) -> list[CaseSummary]:
     financials = actor.can_view_financials
     queryset = Case.objects.all()
@@ -67,6 +72,8 @@ def summaries(
         queryset = queryset.filter(status=status)
     if case_id is not None:
         queryset = queryset.filter(id=case_id)
+    if customer_id is not None:
+        queryset = queryset.filter(customer_id=customer_id)
     rows = list(
         queryset.annotate(
             price_total=Sum("lines__price_xaf", filter=ACTIVE),
@@ -115,3 +122,29 @@ def case_detail(actor: Actor, case_id: UUID) -> CaseDetail:
         summary=summary,
         lines=tuple(line_view(line, financials=actor.can_view_financials) for line in lines),
     )
+
+
+def sales_by_kind(actor: Actor, *, start: date, end: date) -> list[KindSales]:
+    """Lignes émises et non annulées dont la date d'émission tombe dans [start, end]."""
+    financials = actor.can_view_financials
+    rows = (
+        CaseLine.objects.filter(
+            voided_at__isnull=True,
+            issued_on__isnull=False,
+            issued_on__gte=start,
+            issued_on__lte=end,
+        )
+        .values("kind")
+        .annotate(lines=Count("id"), revenue=Sum("price_xaf"), cost=Sum("cost_xaf"))
+        .order_by("kind")
+    )
+    return [
+        KindSales(
+            kind=LineKind(row["kind"]),
+            lines=row["lines"],
+            revenue_xaf=row["revenue"] or 0,
+            cost_xaf=(row["cost"] or 0) if financials else None,
+            margin_xaf=(row["revenue"] or 0) - (row["cost"] or 0) if financials else None,
+        )
+        for row in rows
+    ]

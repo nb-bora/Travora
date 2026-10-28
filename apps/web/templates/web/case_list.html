@@ -52,9 +52,17 @@
 </div>
 {% else %}
 <div class="card empty">
-  <p><strong>Aucun dossier ici.</strong></p>
-  <p class="muted">{% if query %}Aucun résultat pour « {{ query }} ».{% else %}Créez un dossier pour commencer.{% endif %}</p>
-  <a class="btn btn-primary" href="{% url 'web:case_create' %}">Nouveau dossier</a>
+  {% url 'web:flow_chooser' as new_url %}
+  {% if query %}
+  <div class="empty-state">
+    <span class="empty-art" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-5-5"/></svg></span>
+    <p><strong>Aucun dossier ici.</strong></p>
+    <p class="muted">Aucun résultat pour « {{ query }} ».</p>
+    <a class="btn btn-primary" href="{{ new_url }}">Nouveau dossier</a>
+  </div>
+  {% else %}
+  {% include "web/_empty.html" with title="Aucun dossier ici." text="Créez un dossier pour commencer." action_url=new_url action_label="Nouveau dossier" %}
+  {% endif %}
 </div>
 {% endif %}
 {% endblock %}

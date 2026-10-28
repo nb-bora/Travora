@@ -11,7 +11,7 @@ from uuid import UUID
 
 from apps.cases import selectors
 from apps.cases.constants import CaseStatus, LineKind
-from apps.cases.dto import CaseDetail, CaseLineView, CaseSummary, TicketProposal
+from apps.cases.dto import CaseDetail, CaseLineView, CaseSummary, KindSales, TicketProposal
 from apps.cases.services import commands
 from apps.cases.ticket_text import extract_ticket_numbers, parse_booking_text
 from apps.shared_kernel.actor import Actor
@@ -109,8 +109,14 @@ class CasesService:
         return selectors.case_detail(actor, case_id)
 
     @staticmethod
-    def list_cases(actor: Actor, *, status: CaseStatus | None = None) -> list[CaseSummary]:
-        return selectors.summaries(actor, status=status)
+    def list_cases(
+        actor: Actor, *, status: CaseStatus | None = None, customer_id: UUID | None = None
+    ) -> list[CaseSummary]:
+        return selectors.summaries(actor, status=status, customer_id=customer_id)
+
+    @staticmethod
+    def sales_by_kind(actor: Actor, *, start: date, end: date) -> list[KindSales]:
+        return selectors.sales_by_kind(actor, start=start, end=end)
 
     @staticmethod
     def find_case_id_by_reference(actor: Actor, reference: str) -> UUID | None:

@@ -1,7 +1,10 @@
+from datetime import date
 from uuid import UUID
 
+from django.db.models import Count, Sum
+
 from apps.payments.constants import PaymentMethod
-from apps.payments.dto import PaymentView
+from apps.payments.dto import MethodTotal, PaymentView
 from apps.payments.exceptions import PaymentNotFound
 from apps.payments.models import Payment
 
@@ -29,4 +32,17 @@ def payments_for_case(case_id: UUID) -> list[PaymentView]:
     return [
         to_view(payment)
         for payment in Payment.objects.filter(case_id=case_id).order_by("received_on", "id")
+    ]
+
+
+def totals_by_method(*, start: date, end: date) -> list[MethodTotal]:
+    """Encaissements non annulés reçus dans [start, end], par mode de paiement."""
+    rows = (
+        Payment.objects.filter(voided_at__isnull=True, received_on__gte=start, received_on__lte=end)
+        .values("method")
+        .annotate(count=Count("id"), amount=Sum("amount_xaf"))
+        .order_by("method")
+    )
+    return [
+        MethodTotal(PaymentMethod(row["method"]), row["count"], row["amount"] or 0) for row in rows
     ]

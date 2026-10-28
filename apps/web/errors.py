@@ -28,6 +28,7 @@ from apps.payments.exceptions import (
     PaymentError,
     PaymentNotFound,
 )
+from apps.quotes.exceptions import QuoteError, QuoteNotFound
 
 
 def explain(error: Exception) -> str:
@@ -43,11 +44,13 @@ def explain(error: Exception) -> str:
         return "Annulez d'abord les lignes émises de ce dossier."
     if isinstance(error, DuplicateReference):
         return "Cette référence de paiement existe déjà dans l'agence."
-    if isinstance(error, (CaseNotFound, LineNotFound, PaymentNotFound, PaymentAlreadyVoided)):
+    if isinstance(
+        error, (CaseNotFound, LineNotFound, PaymentNotFound, PaymentAlreadyVoided, QuoteNotFound)
+    ):
         return "Cet élément n'existe plus ou a déjà été traité."
     if isinstance(error, (InvalidLine, InvalidPayment, BalanceNotSettled, InvalidPhoneNumber)):
         return str(error)
-    if isinstance(error, (LedgerError, CaseError, PaymentError)):
+    if isinstance(error, (LedgerError, CaseError, PaymentError, QuoteError)):
         return str(error) or "Opération refusée."
     if isinstance(error, IntegrityError):
         return "Cette valeur est déjà utilisée (numéro de billet, référence de paiement…)."
@@ -59,6 +62,7 @@ HANDLED = (
     CaseError,
     PaymentError,
     LedgerError,
+    QuoteError,
     InvalidPhoneNumber,
     IntegrityError,
 )
