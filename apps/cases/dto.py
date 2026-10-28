@@ -73,3 +73,14 @@ class TicketProposal:
     @property
     def recognised(self) -> bool:
         return bool(self.ticket_numbers or self.passengers or self.origin)
+
+
+@dataclass(frozen=True)
+class KindSales:
+    """Ventes émises d'un type de ligne sur une période. Coût et marge : ``None`` hors gérant."""
+
+    kind: LineKind
+    lines: int
+    revenue_xaf: int
+    cost_xaf: int | None
+    margin_xaf: int | None

@@ -27,7 +27,7 @@
     <tbody>
     {% for row in rows %}
       <tr>
-        <td class="strong">{{ row.name }}</td>
+        <td class="strong"><a href="{% url 'web:customer_detail' row.id %}">{{ row.name }}</a></td>
         <td class="muted tabular">{{ row.phone|default:"—" }}</td>
         <td class="num">{{ row.open }}</td>
         <td class="num{% if row.due %} strong{% endif %}">{{ row.due|xaf }}</td>
