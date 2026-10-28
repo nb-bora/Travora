@@ -19,6 +19,18 @@ class AccountsService:
         return selectors.active_membership(user_id)
 
     @staticmethod
+    def record_login_failure(*, username: str, ip_address: str | None) -> None:
+        commands.record_login_failure(username=username, ip_address=ip_address)
+
+    @staticmethod
+    def too_many_login_failures(*, username: str) -> bool:
+        return commands.too_many_login_failures(username=username)
+
+    @staticmethod
+    def clear_login_failures(*, username: str) -> None:
+        commands.clear_login_failures(username=username)
+
+    @staticmethod
     def create_first_manager(*, username: str, password: str) -> MembershipInfo:
         return commands.create_first_manager(username=username, password=password)
 
