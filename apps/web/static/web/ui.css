@@ -1,0 +1,57 @@
+/* Composants d'interface partagés : champs outlined, états vides, squelettes, ripple. Chargé après travora.css. */
+
+/* Champs outlined : icône interne, préfixe/suffixe, états (design : planche « Champs ») */
+.control { position: relative; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); transition: border-color var(--ease), box-shadow var(--ease), background var(--ease); }
+.control:hover { border-color: #94a3b8; }
+.control:focus-within { border-color: var(--teal); box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 18%, transparent); }
+.control input, .control select { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+.control input:focus, .control select:focus { box-shadow: none; }
+.control-icon { flex: 0 0 18px; color: var(--text-2); transition: color var(--ease); }
+.control:focus-within .control-icon { color: var(--teal); }
+.control-affix { color: var(--text-2); font-weight: 500; font-size: 13px; white-space: nowrap; }
+.control-state { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 12px; font-weight: 700; }
+.control.is-invalid { border-color: #dc2626; }
+.control.is-invalid:focus-within { border-color: #dc2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, .14); }
+.control.is-invalid .control-icon { color: #dc2626; }
+.control.is-invalid .control-state { background: var(--danger-bg); color: var(--danger); }
+.control.is-valid { border-color: #16a34a; }
+.control.is-valid .control-state { color: var(--success); }
+.control.is-disabled, .control:has(input:disabled) { background: var(--row); border-color: var(--border); }
+.control input:disabled { color: var(--text-2); cursor: not-allowed; }
+
+/* États vides */
+.empty-state { display: grid; justify-items: center; gap: 4px; }
+.empty-art { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: var(--teal-50); color: var(--teal); margin-bottom: 8px; }
+.empty-state p { margin: 0; }
+.empty-state .btn { margin-top: 12px; }
+
+/* Squelettes de chargement : <div class="skeleton skeleton-line"></div> */
+.skeleton { position: relative; overflow: hidden; background: var(--row); border-radius: 8px; }
+.skeleton-line { height: 14px; margin: 8px 0; }
+.skeleton-card { height: 96px; border-radius: var(--radius-card); }
+.btn[aria-busy="true"] { pointer-events: none; opacity: .85; }
+.btn[aria-busy="true"]::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; }
+
+/* Ripple sur les boutons principaux */
+.btn-primary { position: relative; overflow: hidden; }
+.ripple { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .45); transform: scale(0); pointer-events: none; }
+
+/* Autocomplétion des villes (ARIA combobox) */
+.combo { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 20; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-pop); padding: 6px; max-height: 260px; overflow: auto; margin: 0; list-style: none; }
+.combo[hidden] { display: none; }
+.combo li { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; cursor: pointer; }
+.combo li[aria-selected="true"] { background: var(--teal-50); }
+.combo mark { background: var(--teal-100); color: var(--info); border-radius: 3px; font-weight: 600; }
+.combo .combo-empty { color: var(--text-2); cursor: default; justify-content: center; }
+.control-wrap { position: relative; }
+
+@keyframes shimmer { to { transform: translateX(100%); } }
+@keyframes ripple-out { to { transform: scale(1); opacity: 0; } }
+@keyframes spin-btn { to { transform: rotate(360deg); } }
+@keyframes combo-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent); animation: shimmer 1.4s infinite; }
+  .ripple { animation: ripple-out .6s ease-out forwards; }
+  .btn[aria-busy="true"]::before { animation: spin-btn .8s linear infinite; }
+  .combo { animation: combo-in .16s ease-out both; }
+}
