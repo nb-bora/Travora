@@ -1,7 +1,8 @@
 {% extends "web/base.html" %}
 {% load static web_extras %}
 {% block title %}{{ title }} · Travora{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'web/flow.css' %}?v=1">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'web/flow.css' %}?v=1">
+<link rel="stylesheet" href="{% static 'web/flow-ui.css' %}?v=1">{% endblock %}
 {% block shell %}
 <div class="flow">
   <header class="flow-head">
@@ -28,7 +29,7 @@
   {% block form_open %}<form method="post" class="flow-form" id="flow-form" novalidate>
     {% csrf_token %}
     <button type="submit" name="action" value="{% block default_action %}next{% endblock %}" class="sr-only" tabindex="-1" aria-hidden="true">Continuer</button>{% endblock %}
-    <main id="main" class="flow-main">
+    <main id="main" class="flow-main" data-flow="{{ flow.slug }}" data-step="{{ step }}">
       {% if messages %}
       <div class="messages" role="status" aria-live="polite">
         {% for message in messages %}

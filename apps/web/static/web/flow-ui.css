@@ -1,0 +1,42 @@
+/* Parcours : glissement entre étapes, confettis de la remise, contrôle segmenté à indicateur glissant. */
+@keyframes flow-in-next { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes flow-in-back { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes step-pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes confetti-fall { 0% { transform: translate(0, -8px) rotate(0); opacity: 1; } 100% { transform: translate(var(--dx), 120px) rotate(var(--rot)); opacity: 0; } }
+
+.done-banner { position: relative; overflow: hidden; }
+.confetti { position: absolute; inset: 0; pointer-events: none; }
+.confetti i { position: absolute; top: 0; left: 50%; width: 7px; height: 11px; border-radius: 2px; opacity: 0; background: var(--teal-400); }
+.confetti i:nth-child(3n) { background: #fbbf24; }
+.confetti i:nth-child(3n + 1) { background: #60a5fa; }
+.confetti i:nth-child(1) { --dx: -150px; --rot: 220deg; margin-left: -90px; }
+.confetti i:nth-child(2) { --dx: -90px; --rot: -180deg; margin-left: -50px; }
+.confetti i:nth-child(3) { --dx: -40px; --rot: 300deg; margin-left: -10px; }
+.confetti i:nth-child(4) { --dx: 20px; --rot: -240deg; margin-left: 20px; }
+.confetti i:nth-child(5) { --dx: 80px; --rot: 160deg; margin-left: 60px; }
+.confetti i:nth-child(6) { --dx: 150px; --rot: -300deg; margin-left: 100px; }
+.confetti i:nth-child(7) { --dx: -120px; --rot: 120deg; margin-left: -120px; }
+.confetti i:nth-child(8) { --dx: -60px; --rot: -90deg; margin-left: -70px; }
+.confetti i:nth-child(9) { --dx: 0; --rot: 270deg; margin-left: 0; }
+.confetti i:nth-child(10) { --dx: 60px; --rot: -150deg; margin-left: 40px; }
+.confetti i:nth-child(11) { --dx: 120px; --rot: 200deg; margin-left: 80px; }
+.confetti i:nth-child(12) { --dx: 190px; --rot: -260deg; margin-left: 140px; }
+
+/* --seg-x et --seg-w sont posés par flow.js */
+.seg { position: relative; }
+.seg a { position: relative; z-index: 1; }
+.seg.is-sliding a[aria-selected="true"] { background: none; box-shadow: none; }
+.seg-pill { position: absolute; top: 4px; bottom: 4px; left: 0; width: var(--seg-w, 0); transform: translateX(var(--seg-x, 0)); background: var(--surface); border-radius: 9px; box-shadow: 0 1px 2px rgba(11, 31, 58, .12); pointer-events: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .flow-main > * { animation: flow-in-next .38s cubic-bezier(.2, .8, .2, 1) both; }
+  .flow-main[data-dir="back"] > * { animation-name: flow-in-back; }
+  .flow-main > *:nth-child(2) { animation-delay: .05s; }
+  .flow-main > *:nth-child(3) { animation-delay: .1s; }
+  .flow-main > *:nth-child(4) { animation-delay: .15s; }
+  .step-current .step-dot { animation: step-pop .45s ease both; }
+  .mode-card { transition: transform .2s ease, box-shadow .2s ease; }
+  .mode-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-pop); }
+  .seg-pill { transition: transform .32s cubic-bezier(.2, .8, .2, 1), width .32s cubic-bezier(.2, .8, .2, 1); }
+  .confetti i { animation: confetti-fall 1.6s .2s ease-out forwards; }
+}

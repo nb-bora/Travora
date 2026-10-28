@@ -84,8 +84,7 @@
   </ul>
   {% else %}
   <div class="empty">
-    <p><strong>Rien d'urgent.</strong></p>
-    <p class="muted">Aucun impayé en retard, aucun départ proche non soldé, aucun devis expiré.</p>
+    {% include "web/_empty.html" with title="Rien d'urgent." text="Aucun impayé en retard, aucun départ proche non soldé, aucun devis expiré." icon="M5 12l5 5L20 7" %}
   </div>
   {% endif %}
 </section>

@@ -60,7 +60,7 @@
         </tbody>
       </table>
       {% else %}
-      <div class="empty"><p><strong>Aucune ligne.</strong></p><p class="muted">Ajoutez un billet ou une prestation ci-dessous.</p></div>
+      <div class="empty">{% include "web/_empty.html" with title="Aucune ligne." text="Ajoutez un billet ou une prestation ci-dessous." %}</div>
       {% endif %}
 
       {% if is_open %}
@@ -103,7 +103,7 @@
         {% endfor %}
       </ul>
       {% else %}
-      <div class="empty"><p class="muted">Aucun encaissement pour l'instant.</p></div>
+      <div class="empty">{% include "web/_empty.html" with title="Aucun encaissement." text="Les paiements reçus apparaîtront ici." icon="M2 7h20v10H2zM12 9.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5z" %}</div>
       {% endif %}
     </section>
   </div>
