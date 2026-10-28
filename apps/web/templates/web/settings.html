@@ -1,0 +1,87 @@
+{% extends "web/base.html" %}
+{% load static web_extras %}
+{% block title %}Réglages · Travora{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'web/settings.css' %}?v=1">{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Réglages</h1>
+    <p class="muted">Réservé au gérant : l'agence, l'équipe et la clôture comptable.</p>
+  </div>
+</header>
+
+<div class="settings-grid">
+  <section class="card" aria-labelledby="s-agency">
+    <h2 id="s-agency" class="card-title">Identité de l'agence</h2>
+    <dl class="facts">
+      <div><dt>Nom</dt><dd>{{ agency.name }}</dd></div>
+      <div><dt>Identifiant</dt><dd class="tabular">{{ agency.slug }}</dd></div>
+    </dl>
+    <p class="muted settings-note">Le nom et l'identifiant se changent auprès du support Travora.</p>
+  </section>
+
+  <section class="card" aria-labelledby="s-rules">
+    <h2 id="s-rules" class="card-title">Règles en vigueur</h2>
+    <dl class="facts">
+      <div><dt>Départ proche</dt><dd>{{ upcoming_days }} jour{{ upcoming_days|pluralize }}</dd></div>
+      <div><dt>Durée de session</dt><dd>{{ session_hours }} h d'inactivité</dd></div>
+      <div><dt>Verrouillage de connexion</dt><dd>{{ max_failures }} échecs, {{ lock_minutes }} min</dd></div>
+    </dl>
+    <p class="muted settings-note">Ces valeurs viennent de la configuration du serveur : elles ne se changent pas ici.</p>
+  </section>
+
+  <section class="card settings-wide" aria-labelledby="s-team">
+    <h2 id="s-team" class="card-title">Équipe ({{ team|length }})</h2>
+    <div class="table-wrap">
+      <table>
+        <caption class="sr-only">Membres de l'agence</caption>
+        <thead><tr><th scope="col">Identifiant</th><th scope="col">Rôle</th><th scope="col">Depuis</th><th scope="col">État</th></tr></thead>
+        <tbody>
+        {% for member in team %}
+          <tr>
+            <td class="strong">{{ member.username }}</td>
+            <td>{% if member.role.value == "manager" %}<span class="badge badge-info">Gérant</span>{% else %}<span class="badge badge-neutral">Agent</span>{% endif %}</td>
+            <td class="muted tabular">{{ member.joined_at|date:"d/m/Y" }}</td>
+            <td>{% if member.is_active %}<span class="badge badge-success">✓ Actif</span>{% else %}<span class="badge badge-danger">Désactivé</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card settings-wide" aria-labelledby="s-invite">
+    <h2 id="s-invite" class="card-title">Ajouter un membre</h2>
+    <p class="muted settings-note">Donnez l'identifiant et un mot de passe provisoire ; l'agent se connecte tout de suite. L'agent ne voit jamais les coûts ni les marges.</p>
+    <form method="post" action="{% url 'web:member_add' %}" class="form settings-form">
+      {% csrf_token %}
+      {% include "web/_form_fields.html" with form=member_form %}
+      <div class="actions"><button class="btn btn-primary" type="submit">Ajouter à l'équipe</button></div>
+    </form>
+  </section>
+
+  <section class="card settings-wide" aria-labelledby="s-close">
+    <h2 id="s-close" class="card-title">Clôturer une période</h2>
+    <p class="muted settings-note">
+      {% if closed_until %}La comptabilité est close jusqu'au <strong>{{ closed_until|date:"d/m/Y" }}</strong>.{% else %}Aucune période n'est close pour l'instant.{% endif %}
+      Une période close ne se modifie plus : toute correction passe par une écriture à la date du jour.
+    </p>
+    {% if open_months %}
+    <form method="get" action="{% url 'web:period_close' %}" class="settings-close">
+      <div class="field">
+        <label for="close-month">Clôturer jusqu'à la fin de</label>
+        <select id="close-month" name="mois">
+          {% for row in open_months %}<option value="{{ row.key }}">{{ row.label }}</option>{% endfor %}
+        </select>
+      </div>
+      <button class="btn btn-secondary" type="submit">Continuer</button>
+    </form>
+    {% else %}
+    <p class="muted">Tous les mois récents sont déjà clos.</p>
+    {% endif %}
+    <ul class="month-chips" aria-label="Mois récents">
+      {% for row in months %}<li class="badge {% if row.closed %}badge-success{% else %}badge-neutral{% endif %}">{% if row.closed %}✓ {% endif %}{{ row.label }}</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

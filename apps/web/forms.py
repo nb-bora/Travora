@@ -144,3 +144,33 @@ class QuickEntryForm(OnceForm):
                 f"{data.get('origin', '').strip()} → {data.get('destination', '').strip()}"
             )
         return data
+
+
+class MemberForm(OnceForm):
+    username = forms.RegexField(
+        label="Identifiant",
+        regex=r"^[\w.@+-]+$",
+        max_length=150,
+        error_messages={"invalid": "Lettres, chiffres et . @ + - _ seulement, sans espace."},
+    )
+    password = forms.CharField(
+        label="Mot de passe provisoire",
+        min_length=8,
+        max_length=128,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        strip=False,
+    )
+    role = forms.ChoiceField(
+        label="Rôle", choices=[("agent", "Agent"), ("manager", "Gérant")], initial="agent"
+    )
+
+
+class ClosePeriodForm(WebForm):
+    month = forms.CharField(widget=forms.HiddenInput, max_length=7)
+    confirm = forms.CharField(label="Tapez CLÔTURER pour confirmer", max_length=20, strip=True)
+
+    def clean_confirm(self) -> str:
+        value = self.cleaned_data["confirm"]
+        if value.upper() != "CLÔTURER":
+            raise forms.ValidationError("Tapez le mot CLÔTURER pour confirmer.")
+        return value
