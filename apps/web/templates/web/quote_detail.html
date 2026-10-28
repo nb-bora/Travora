@@ -1,0 +1,65 @@
+{% extends "web/base.html" %}
+{% load web_extras %}
+{% block title %}Devis {{ summary.reference }} · Travora{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Devis {{ summary.reference }} <span class="muted">v{{ quote.version }}</span></h1>
+    <p class="muted">{{ summary.customer_name }} · valable jusqu'au {{ quote.valid_until|date:"j N Y" }}
+      {% if quote.sent_at %}· envoyé le {{ quote.sent_at|date:"j N Y" }}{% endif %}</p>
+  </div>
+  <span class="badge {{ badge }}">{{ label }}</span>
+</header>
+
+{% if quote.is_expired %}
+<p class="alert alert-danger" role="alert">Ce devis est expiré. Créez une nouvelle version depuis le dossier pour le renvoyer.</p>
+{% endif %}
+
+<div class="layout-2">
+  <div class="layout-main">
+    <section class="card table-wrap" aria-labelledby="quote-lines">
+      <div class="section-head"><h2 id="quote-lines">Lignes du devis</h2></div>
+      <table>
+        <caption class="sr-only">Lignes du devis</caption>
+        <thead><tr><th scope="col">Désignation</th><th scope="col">Passager</th><th scope="col" class="num">Prix</th></tr></thead>
+        <tbody>
+        {% for line in quote.lines %}
+          <tr><td class="strong">{{ line.label }}</td><td class="muted">{{ line.passenger_name|default:"—" }}</td><td class="num">{{ line.price_xaf|xaf }}</td></tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><th scope="row" colspan="2">Total</th><td class="num strong">{{ quote.total_xaf|xaf }}</td></tr></tfoot>
+      </table>
+    </section>
+
+    {% if delivery %}
+    <section class="card" aria-labelledby="quote-msg">
+      <h2 id="quote-msg" class="card-title">Message pour le client</h2>
+      <p class="quote-message">{{ delivery.message }}</p>
+      <a class="btn btn-primary" href="{{ delivery.whatsapp_url }}" rel="noopener" target="_blank">Ouvrir WhatsApp</a>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="layout-aside" aria-label="Actions">
+    <section class="card" aria-labelledby="quote-actions">
+      <h2 id="quote-actions" class="card-title">Actions</h2>
+      <div class="form">
+        {% if is_draft %}
+        <form method="post" action="{% url 'web:quote_send' quote.id %}">{% csrf_token %}
+          <button class="btn btn-primary" type="submit">Envoyer au client</button></form>
+        <p class="field-hint">Dès l'envoi, la version est figée : une modification passe par une nouvelle version.</p>
+        {% elif is_sent %}
+        <form method="post" action="{% url 'web:quote_accept' quote.id %}">{% csrf_token %}
+          <button class="btn btn-primary" type="submit">Le client accepte</button></form>
+        <form method="post" action="{% url 'web:quote_refuse' quote.id %}">{% csrf_token %}
+          <button class="btn btn-secondary" type="submit">Le client refuse</button></form>
+        {% else %}
+        <p class="muted flush">Ce devis a reçu une réponse.</p>
+        {% endif %}
+        <a class="btn btn-secondary" href="{% url 'web:quote_pdf' quote.id %}" target="_blank" rel="noopener">Télécharger le PDF</a>
+        <a class="btn btn-ghost" href="{% url 'web:case_detail' summary.id %}">Voir le dossier</a>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

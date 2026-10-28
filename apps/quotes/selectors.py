@@ -42,6 +42,10 @@ def quotes_for_case(case_id: UUID) -> list[QuoteView]:
     return [to_view(quote) for quote in Quote.objects.filter(case_id=case_id).order_by("version")]
 
 
+def all_quotes(limit: int = 500) -> list[QuoteView]:
+    return [to_view(quote) for quote in Quote.objects.order_by("-created_at", "-id")[:limit]]
+
+
 def expired_sent_quotes(as_of: date | None = None) -> list[QuoteView]:
     quotes = Quote.objects.filter(
         status=QuoteStatus.SENT, valid_until__lt=as_of or timezone.localdate()
