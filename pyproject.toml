@@ -19,7 +19,7 @@ dev = [
     "ruff>=0.15",
     "mypy>=1.18",
     "django-stubs>=5.2",
-    "import-linter>=2.5",
+    "import-linter>=2.16",
     "pip-audit>=2.9",
 ]
 
