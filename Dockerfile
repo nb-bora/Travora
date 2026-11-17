@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.14-slim AS builder
+FROM python:3.15-slim AS builder
 
 ENV POETRY_VERSION=2.4.1 \
     POETRY_NO_INTERACTION=1 \
@@ -15,7 +15,7 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-root
 
 
-FROM python:3.14-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 # WeasyPrint exige Pango (version 1.44 ou plus) et des polices installées.
 RUN apt-get update \
